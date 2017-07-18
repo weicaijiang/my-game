@@ -16,6 +16,8 @@ var Server struct {
 	MaxConnNum  int
 	ConsolePort int
 	ProfilePath string
+	DBMaxConnNum int
+	DBUrl        string
 }
 
 func init() {

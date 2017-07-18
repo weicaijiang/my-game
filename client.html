@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MyGame</title>
+    <script src="./vuejs/vue.js"></script>
+</head>
+<body>
+<div id="app">
+    <div style="align-content: center">
+        <input v-model="WUser.Name" placeholder="your name" >
+        <br>
+        <input v-model="WUser.Password" type="password" placeholder="your password">
+        <br>
+        <button v-on:click="ok">注册</button>
+    </div>
+</div>
+
+</body>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            WUser: {
+                Name: '',
+                Password: ''
+            }
+
+        },
+        methods: {
+            ok:function(){
+                console.log("clicking",ws)
+                console.log("clicking",this.WUser)
+                ws.onopen = function () {
+                    console.log("user",this.WUser)
+                    ws.send(JSON.stringify(this.WUser))
+                }
+            },
+
+        },
+    })
+
+    var ws = new WebSocket('ws://127.0.0.1:3653')
+    ws.onopen = function()
+    {
+        // Web Socket 已连接上，使用 send() 方法发送数据
+        ws.send(JSON.stringify({WUser:{Name:'yin12',Password:'yin12'}}));
+        alert("数据发送中...");
+    };
+
+    ws.onmessage = function (evt)
+    {
+        var received_msg = evt.data;
+//        alert("数据已接收...");
+        console.log("received =",received_msg)
+    };
+
+//    ws.onclose = function()
+//    {
+//        // 关闭 websocket
+//        alert("连接已关闭...");
+//    };
+
+</script>
+</html>
+

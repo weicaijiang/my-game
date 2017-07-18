@@ -10,6 +10,7 @@ import (
 func init() {
 	// 向当前模块（game 模块）注册 Hello 消息的消息处理函数 handleHello
 	handler(&msg.Hello{}, handleHello)
+
 }
 
 func handler(m interface{}, h interface{}) {
@@ -30,3 +31,5 @@ func handleHello(args []interface{}) {
 		Name: "client",
 	})
 }
+
+

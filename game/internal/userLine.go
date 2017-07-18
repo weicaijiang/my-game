@@ -4,9 +4,13 @@ import (
 	"sort"
 	"time"
 	"my-game/aglorithm"
+	"github.com/name5566/leaf/gate"
+	"github.com/name5566/leaf/go"
 )
 
 type UserLine struct {
+	gate.Agent
+	*g.LinearContext
 	UserData *User
 	RoomId int
 	ReadySign int //准备信号
@@ -61,12 +65,13 @@ func (u *UserLine)outOneRealCard(value int) bool  {
 
 //摸牌 处理 添加一张手牌
 //参数 value 为牌的值
-func (u *UserLine)addOneRealCard(value int)  {
+func (u *UserLine)addOneRealCard(value int) bool  {
 	if v, ok := u.CardMap[value]; ok{
 		u.CardMap[value] = v + 1 //已有 数量加 一
 	}else {
 		u.CardMap[value] = 1
 	}
+	return true
 }
 
 //检查 手牌是否能杠 摸完牌或者别人打出一张牌
@@ -120,7 +125,7 @@ func (u *UserLine)penDealCards(value int)  {
 //玩家 信号切换 准备
 func (u *UserLine)readGame()  {
 	u.ReadySign = u.ReadySign ^ 1
-	if u.ReadySign{
+	if u.ReadySign == 1{
 		room := rooms[u.RoomId]
 		room.GameStartVote ++
 		if room.GameStartVote == room.RoomData.RoomVolume{
@@ -155,9 +160,11 @@ func (u *UserLine) CreateRoom() bool {
 func (u *UserLine)playMyCards(value int)  {
 
 	var room Room
+	//var i int
 	select {
-	case room = rooms[<-u.RoomSignal]:
+	case i := <- u.RoomSignal:
 	//	玩家操作
+		room = *rooms[i]
 
 	case <-time.After( 5 * time.Second)://玩家超时 还没打 将自动打出 摸起的牌
 		u.outOneRealCard(value)
