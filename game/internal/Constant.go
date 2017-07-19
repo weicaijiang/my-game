@@ -1,6 +1,9 @@
 package internal
 
 
-const myusers  = "myusers"
-const DBName  = "daozhoumj"
+const  (
+	DBName  = "daozhoumj"
+	myusers  = "myusers"
+	C_USERS = "myusers"
+)
 

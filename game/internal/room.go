@@ -36,11 +36,8 @@ type Room struct {
 
 }
 
-var rooms map[int]*Room
+var rooms = make(map[int]*Room)
 
-func init()  {
-	rooms = make(map[int]*Room)
-}
 
 func (r *Room)isFull() bool {
 	return len(r.RoomUserId) == r.RoomData.RoomVolume
@@ -61,10 +58,10 @@ func (r *Room)startGame()  {
 		var userLine3 UserLine
 		var userLine4 UserLine
 		for _, userId := range r.RoomUserId{
-			userLine1 = userLines[userId]
-			userLine2 = userLines[userId]
-			userLine3 = userLines[userId]
-			userLine4 = userLines[userId]
+			userLine1 = *userLines[userId]
+			userLine2 = *userLines[userId]
+			userLine3 = *userLines[userId]
+			userLine4 = *userLines[userId]
 		}
 		for i:=0; i< 4* 13; i = i+4{
 			if v,ok := userLine1.CardMap[r.CardsBase[i]]; ok{

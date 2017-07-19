@@ -6,14 +6,24 @@ import (
 	"my-game/aglorithm"
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/go"
+	"gopkg.in/mgo.v2/bson"
+	"leaf/log"
+	"my-game/msg"
+	"github.com/name5566/leaf/timer"
+	"github.com/name5566/leaf/util"
+	"gopkg.in/mgo.v2"
+	"fmt"
 )
 
 type UserLine struct {
 	gate.Agent
 	*g.LinearContext
-	UserData *User
+	userData *User
 	RoomId int
 	ReadySign int //准备信号
+	State int //玩家状态
+	saveDBTimer *timer.Timer
+
 
 	MyTurn	chan int //轮到我 的信号
 	RoomSignal chan int //房间释放信号 该玩家操作
@@ -23,11 +33,124 @@ type UserLine struct {
 	GangCards []int //用于存放杠
 }
 
-var userLines map[int]UserLine //保存玩家 key为userid value 为userline
+const  (
+	userLogin = iota
+	userLogout
+	userGame
+)
 
-func init()  {
-	userLines = make(map[int]UserLine)
+//var userLines map[int]UserLine //保存玩家 key为userid value 为userline
+
+var (
+	accIDUsers = make(map[string]*UserLine)
+	userLines = make(map[int]*UserLine)
+)
+
+func GetLineUsers()int  {
+	count := len(userLines)
+	return count
 }
+
+//登录
+func (u *UserLine)login(name string)  {
+	fmt.Println("userLiners =",GetLineUsers())
+	userData := new(User)
+	skeleton.Go(func() {
+		db := mongoDB.Ref()
+		defer mongoDB.UnRef(db)
+
+		err := db.DB(DBName).C(C_USERS).Find(bson.M{"name":name}).One(userData)
+		if err != nil{
+			fmt.Println("err db")
+			if err != mgo.ErrNotFound{
+				log.Error("load acc %v data error: %v", name, err)
+				userData = nil
+				u.WriteMsg(&msg.CodeState{msg.ERRO_Unkonw,"未知错误!"})
+				u.Close()
+				return
+			}
+
+		//	new
+			err := userData.initValue(name)
+
+			if err != nil{
+				log.Error("init acc %v data error: %v",name, err)
+				userData = nil
+				u.WriteMsg(&msg.CodeState{msg.ERRO_InitValue,"初始值报错initValue!"})
+				u.Close()
+				return
+			}
+		}
+	}, func() {
+		if u.State == userLogout{
+			u.logout(name)
+			return
+		}
+
+		u.State = userGame
+		if userData == nil{
+			return
+		}
+		userData.LastLoginTime = int(time.Now().Unix())
+		u.userData = userData
+		userLines[u.userData.Id]= u
+		u.UserData().(*AgentInfo).userID = userData.Id
+		fmt.Println("userline=%v",u)
+		u.autoSaveDB()
+	})
+}
+
+func (u *UserLine)logout(name string)  {
+	if u.userData != nil{
+		u.saveDBTimer.Stop()
+		//delete(accIDUsers,name)
+		delete(userLines,u.userData.Id)
+	}
+
+	data := util.DeepClone(u.userData)
+	u.Go(func() {
+		if data != nil {
+			db := mongoDB.Ref()
+			defer mongoDB.UnRef(db)
+			userID := data.(*User).Id
+			_, err := db.DB("game").C("users").
+				UpsertId(userID, data)
+			if err != nil {
+				log.Error("save user %v data error: %v", userID, err)
+			}
+		}
+	}, func() {
+		delete(accIDUsers, name)
+	})
+}
+
+func (u *UserLine)autoSaveDB()  {
+	//const duration  = 5 * time.Minute
+	const duration  = 15 * time.Second
+
+	u.saveDBTimer = skeleton.AfterFunc(duration, func() {
+		data := util.DeepClone(u.userData)
+		u.Go(func() {
+			db := mongoDB.Ref()
+			defer mongoDB.UnRef(db)
+			userID := data.(*User).Id
+			_, err := db.DB(DBName).C(C_USERS).UpsertId(userID, data)
+			if err != nil{
+				log.Error("save user %v data error",data)
+				//return
+			}
+			fmt.Println("insert db")
+
+		}, func() {
+			u.autoSaveDB()
+		})
+	})
+}
+
+//func InitUserLine(a gate.Agent)(u *UserLine)  {
+//	user := new(UserLine)
+//
+//}
 
 //将手牌为map类型 生成数组 并排好序 返回给前端
 func (u *UserLine)getRealCards(cardMap map[int]int) (a []int){
@@ -170,7 +293,7 @@ func (u *UserLine)playMyCards(value int)  {
 		u.outOneRealCard(value)
 		//room := rooms[u.RoomId]
 	}
-	room.RoomTurn <- (room.RoomUserId[u.UserData.Id] + 1) % 4 //下一家 摸牌等 权限
+	room.RoomTurn <- (room.RoomUserId[u.userData.Id] + 1) % 4 //下一家 摸牌等 权限
 }
 
 
@@ -196,12 +319,12 @@ func (u *UserLine)userPlayCard()  {
 				}
 			//	是否是 他人 若是 则进行 是否能碰
 			//
-				if room.PlayerTurn == u.UserData.Id && u.canPen(dealCard){
+				if room.PlayerTurn == u.userData.Id && u.canPen(dealCard){
 				//	碰后 手牌 变化等操作
 				}
 
 			//	是否能出牌
-				if room.PlayerTurn == u.UserData.Id {
+				if room.PlayerTurn == u.userData.Id {
 				//	玩家出牌
 					var value int //接收 玩家要出的牌 从前端
 					if u.outOneRealCard(value){
@@ -210,7 +333,6 @@ func (u *UserLine)userPlayCard()  {
 					}
 				}
 				rooms[u.RoomId].PlayerSignal <- (room.PlayerTurn + 1) % 4
-
 
 			}
 		//case <- time.After(5 * time.Second):

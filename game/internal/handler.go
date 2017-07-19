@@ -11,6 +11,8 @@ func init() {
 	// 向当前模块（game 模块）注册 Hello 消息的消息处理函数 handleHello
 	handler(&msg.Hello{}, handleHello)
 
+	handler(&msg.RoomBase{},handleCreateRoom)
+
 }
 
 func handler(m interface{}, h interface{}) {
@@ -32,4 +34,12 @@ func handleHello(args []interface{}) {
 	})
 }
 
+func handleCreateRoom(args []interface{})  {
+	m := args[0].(*msg.RoomBase)
 
+	a := args[1].(gate.Agent)
+	log.Debug("room %v",m)
+	log.Debug("a =%v",a.UserData().(*AgentInfo).accID)
+	log.Debug("a =%v",a)
+	a.WriteMsg(&msg.RoomBase{6})
+}

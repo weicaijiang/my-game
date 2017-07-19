@@ -17,6 +17,7 @@
       <root url="file://$PROJECT_DIR$/../server" />
       <root url="file://$PROJECT_DIR$/../leaf" />
       <root url="file://$PROJECT_DIR$/../beego-mgo" />
+      <root url="file://$PROJECT_DIR$/../sync-chess" />
       <root url="file://$PROJECT_DIR$/../leafserver" />
     </CLASSES>
     <SOURCES>
@@ -36,6 +37,7 @@
       <root url="file://$PROJECT_DIR$/../server" />
       <root url="file://$PROJECT_DIR$/../leaf" />
       <root url="file://$PROJECT_DIR$/../beego-mgo" />
+      <root url="file://$PROJECT_DIR$/../sync-chess" />
       <root url="file://$PROJECT_DIR$/../leafserver" />
     </SOURCES>
     <excluded>

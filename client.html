@@ -8,11 +8,16 @@
 <body>
 <div id="app">
     <div style="align-content: center">
-        <input v-model="WUser.Name" placeholder="your name" >
+        <input v-model="Union" placeholder="your name" >
         <br>
-        <input v-model="WUser.Password" type="password" placeholder="your password">
-        <br>
+        <!--<input v-model="WUser.Password" type="password" placeholder="your password">-->
+        <!--<br>-->
         <button v-on:click="ok">注册</button>
+        <br><button @click="createRoom">创建房间</button> <button @click="joinRoom">加入房间</button>
+        <br>{{room}}
+
+        <br><button @click="testL">test</button>
+        
     </div>
 </div>
 
@@ -22,38 +27,64 @@
     var app = new Vue({
         el: '#app',
         data: {
-            WUser: {
-                Name: '',
-                Password: ''
-            }
+           Union: '',
+//            ws:
+            room:{},//房间信息
 
         },
         methods: {
             ok:function(){
-                console.log("clicking",ws)
-                console.log("clicking",this.WUser)
-                ws.onopen = function () {
-                    console.log("user",this.WUser)
-                    ws.send(JSON.stringify(this.WUser))
-                }
+//                console.log("clicking",ws)
+//                console.log("clicking",this.WUser)
+//                console.log("json=",JSON.stringify(this.WUser))
+//                console.log("JSON=",JSON.stringify({WUser:{Name:this.WUser.Name,Password:this.WUser.Password}}))
+                ws.binaryType = 'arraybuffer'
+                ws.send(JSON.stringify({WeChatLogin:{Union:this.Union}}))
             },
+            createRoom:function () {
+//                console.log("cccreteaaaaa")
+//                ws.send(JSON.stringify({RoomBase:{Volume:4}}))
+            },
+            joinRoom:function () {
+
+            },
+            testL:function () {
+                console.log("cccreteaaaaa")
+                ws.send(JSON.stringify({RoomBase:{Volume:4}}))
+            }
 
         },
     })
 
+    var decoder = new TextDecoder('utf-8')
     var ws = new WebSocket('ws://127.0.0.1:3653')
-    ws.onopen = function()
-    {
-        // Web Socket 已连接上，使用 send() 方法发送数据
-        ws.send(JSON.stringify({WUser:{Name:'yin12',Password:'yin12'}}));
-        alert("数据发送中...");
-    };
+//    ws.onopen = function()
+//    {
+//        // Web Socket 已连接上，使用 send() 方法发送数据
+//        ws.send(JSON.stringify({WUser:{Name:'yind12dddd',Password:'yidn12sddd'}}));
+//        alert("数据发送中...");
+//    };
 
     ws.onmessage = function (evt)
     {
-        var received_msg = evt.data;
+        var data = JSON.parse(decoder.decode(evt.data));
+
 //        alert("数据已接收...");
-        console.log("received =",received_msg)
+        console.log("received =",data)
+        console.log("received =",typeof (data))
+//        var
+
+        if (data.CodeState){
+            console.log("code===")
+        }
+        if (data.RoomBase){
+            console.log("room")
+        }
+//        switch (data){
+//        case
+//        }
+//        console.log("received 1=",data.CodeState.MSG_STATE)
+//        console.log("received 2=",data.CodeState.Message)
     };
 
 //    ws.onclose = function()

@@ -13,19 +13,20 @@ func handleMsg(m interface{}, h interface{}) {
 }
 
 func init() {
-	handleMsg(&msg.WUser{},handleLogin)
+	handleMsg(&msg.WeChatLogin{},handleLogin)
 }
 
 func handleLogin(args []interface{})  {
-	m := args[0].(*msg.WUser)
+	m := args[0].(*msg.WeChatLogin)
 	a := args[1].(gate.Agent)
 	fmt.Println("mmmmm",m)
-	if m.Name == ""||len(m.Name) < 0{
+	if m.Union == ""||len(m.Union) < 0{
 		a.WriteMsg(&msg.CodeState{msg.ERROR_Params,"账号不能为空"})
 		return
 	}
 
-	game.ChanRPC.Go("RegisterAgent",m,a)
+	game.ChanRPC.Go("LoginAgent",m.Union,a)
 	a.WriteMsg(&msg.CodeState{msg.SUCCESS_Register,"one success!"})
+	fmt.Println("login success")
 
 }
