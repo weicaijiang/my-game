@@ -63,7 +63,7 @@ func rpcRegisterAgent(args []interface{})  {
 
 func rpcLoginAgent(args []interface{})  {
 	union := args[0].(string)
-	fmt.Println("union=",union)
+	//fmt.Println("union=",union)
 	a := args[1].(gate.Agent)
 	//if a.UserData() == nil{
 	//	fmt.Println("userDate==nil")

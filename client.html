@@ -13,11 +13,14 @@
         <!--<input v-model="WUser.Password" type="password" placeholder="your password">-->
         <!--<br>-->
         <button v-on:click="ok">注册</button>
-        <br><button @click="createRoom">创建房间</button> <button @click="joinRoom">加入房间</button>
-        <br>{{room}}
+        <br><button @click="createRoom">创建房间</button>
+        <br>创建的房间号:{{room}}
+        <br><input v-model="roomID" placeholder="room id">
+        <button @click="joinRoom">加入房间</button>
 
-        <br><button @click="testL">test</button>
-        
+        <br><button @click="readyGame">准备</button>
+        <br><button @click="quitRoom">退出房间</button>
+
     </div>
 </div>
 
@@ -30,6 +33,7 @@
            Union: '',
 //            ws:
             room:{},//房间信息
+            roomID:'',
 
         },
         methods: {
@@ -38,19 +42,22 @@
 //                console.log("clicking",this.WUser)
 //                console.log("json=",JSON.stringify(this.WUser))
 //                console.log("JSON=",JSON.stringify({WUser:{Name:this.WUser.Name,Password:this.WUser.Password}}))
-                ws.binaryType = 'arraybuffer'
+//                ws.binaryType = 'arraybuffer'
                 ws.send(JSON.stringify({WeChatLogin:{Union:this.Union}}))
             },
-            createRoom:function () {
-//                console.log("cccreteaaaaa")
-//                ws.send(JSON.stringify({RoomBase:{Volume:4}}))
-            },
             joinRoom:function () {
-
+                console.log("roomID=",this.roomID)
+                ws.send(JSON.stringify({JoinRoom:{RoomAccID:this.roomID}}))
             },
-            testL:function () {
+            createRoom:function () {
                 console.log("cccreteaaaaa")
                 ws.send(JSON.stringify({RoomBase:{Volume:4}}))
+            },
+            quitRoom:function () {
+                ws.send(JSON.stringify({QuitRoom:{Flag:1}}))
+            },
+            readyGame:function () {
+                ws.send(JSON.stringify({ReadyGame:{Flag:1}}))
             }
 
         },
@@ -58,6 +65,7 @@
 
     var decoder = new TextDecoder('utf-8')
     var ws = new WebSocket('ws://127.0.0.1:3653')
+    ws.binaryType = 'arraybuffer'
 //    ws.onopen = function()
 //    {
 //        // Web Socket 已连接上，使用 send() 方法发送数据
@@ -71,14 +79,27 @@
 
 //        alert("数据已接收...");
         console.log("received =",data)
-        console.log("received =",typeof (data))
+//        console.log("received =",typeof (data))
 //        var
 
         if (data.CodeState){
             console.log("code===")
-        }
-        if (data.RoomBase){
+        }else if (data.RoomBase){
             console.log("room")
+        }else if(data.RoomDataInfo){
+
+            this.roomID = data.RoomDataInfo.RoomAccID
+
+        }else if(data.Cards){
+
+        }else if(data.JoinRoom){
+
+        }else if(data.QuitRoom){
+
+        }else if(data.ReadyGame){
+            console.log("readyGame",data.ReadyGame.Flag)
+        }else{
+            console.log("else...")
         }
 //        switch (data){
 //        case

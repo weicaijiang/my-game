@@ -19,10 +19,11 @@ type UserLine struct {
 	gate.Agent
 	*g.LinearContext
 	userData *User
-	RoomId int
+	RoomId string
 	ReadySign int //准备信号
 	State int //玩家状态
 	saveDBTimer *timer.Timer
+	RoomPosition int //座位号
 
 
 	MyTurn	chan int //轮到我 的信号
@@ -31,6 +32,10 @@ type UserLine struct {
 	CardMap	map[int]int //用来存放手牌的 用map 利于删除(打出) key 为牌的值 value为 张数
 	PenCards map[int]int //用于存放碰 用map 利于升级为 杠 同时利于删除操作 key为牌的值 value暂时未定
 	GangCards []int //用于存放杠
+
+	Cardings []int //存放手牌
+	PengCardings []int //存放碰的牌
+	GangCardings []int //存放杠的牌
 }
 
 const  (
@@ -59,7 +64,7 @@ func (u *UserLine)login(name string)  {
 		db := mongoDB.Ref()
 		defer mongoDB.UnRef(db)
 
-		err := db.DB(DBName).C(C_USERS).Find(bson.M{"name":name}).One(userData)
+		err := db.DB(DBName).C(C_USERS).Find(bson.M{"accid":name}).One(userData)
 		if err != nil{
 			fmt.Println("err db")
 			if err != mgo.ErrNotFound{
@@ -100,6 +105,7 @@ func (u *UserLine)login(name string)  {
 	})
 }
 
+//退出
 func (u *UserLine)logout(name string)  {
 	if u.userData != nil{
 		u.saveDBTimer.Stop()
@@ -113,7 +119,7 @@ func (u *UserLine)logout(name string)  {
 			db := mongoDB.Ref()
 			defer mongoDB.UnRef(db)
 			userID := data.(*User).Id
-			_, err := db.DB("game").C("users").
+			_, err := db.DB(DBName).C(C_USERS).
 				UpsertId(userID, data)
 			if err != nil {
 				log.Error("save user %v data error: %v", userID, err)
@@ -123,7 +129,7 @@ func (u *UserLine)logout(name string)  {
 		delete(accIDUsers, name)
 	})
 }
-
+//自动存储
 func (u *UserLine)autoSaveDB()  {
 	//const duration  = 5 * time.Minute
 	const duration  = 15 * time.Second
@@ -145,6 +151,94 @@ func (u *UserLine)autoSaveDB()  {
 			u.autoSaveDB()
 		})
 	})
+}
+
+//创建房间
+func (u *UserLine)createRoom(m interface{})  {
+	if u.RoomId != ""{//已有房间
+		u.WriteMsg(&msg.CodeState{msg.ERRO_ONLYROOM,"你已有房间了，请退出当前房间后操作!"})
+		return
+	}
+	newRoom := new(RoomData)
+	err := newRoom.initValue()
+	if err != nil{
+		u.WriteMsg(&msg.CodeState{msg.ERRO_InitValue,"内部错误，暂时无法创建房间!"})
+		return
+	}
+	newRoom.RoomVolume = m.(*msg.RoomBase).Volume
+	room := new(Room)
+	room.initRoom()
+	room.RoomData = newRoom
+	room.RoomOwner = u.userData.Id
+	room.RoomUserId[1] = u.userData.AccID
+	u.RoomPosition = 1
+	AddCreateRoom(room)
+	u.RoomId = room.RoomData.RoomAccID
+	u.WriteMsg(&msg.RoomDataInfo{RoomID:newRoom.RoomID,RoomAccID:newRoom.RoomAccID,
+	RoomType:newRoom.RoomType,RoomVolume:newRoom.RoomVolume,RoomPay:newRoom.RoomPay,RoomBaseMoney:newRoom.RoomBaseMoney,
+	CreatedTime:newRoom.CreatedTime})
+
+}
+
+//加入房间
+func (u *UserLine)joinRoom(room *Room)  {
+	if u.RoomId != ""{
+		u.WriteMsg(&msg.CodeState{msg.ERRO_ONLYROOM,"你已有房间了，请退出当前房间后操作!"})
+		return
+	}else{
+		if len(room.RoomUserId) >= room.RoomData.RoomVolume{
+			u.WriteMsg(&msg.CodeState{msg.FAILURE_DONE, "房间满了!"})
+			return
+		}else {
+			u.RoomId = room.RoomData.RoomAccID
+			for i := 1; i <= room.RoomData.RoomVolume; i++{
+				if _,ok := room.RoomUserId[i];!ok{
+					room.RoomUserId[i] = u.userData.AccID
+					u.RoomPosition = i
+					fmt.Println("玩家ID=",u.userData.AccID+" 加入房间ID=",u.RoomId+" 座位号为:",i)
+					break
+				}
+			}
+		}
+	}
+}
+
+
+
+
+//退出房间
+//注意：游戏中 是无法退出的 除非 自己掉线了 将是 变成托管
+//房间信号 置为 0 即 r.StartGameChan <- 0
+func (u *UserLine)quitRoom()  {
+	fmt.Println("quit--room",u.RoomId)
+	if u.RoomId == ""{
+
+	}else {
+		fmt.Println("退出第一步")
+		room := rooms[u.RoomId]
+		room.RoomState = 0
+		go func() {
+			if len(room.RoomUserId) == room.RoomData.RoomVolume{//说明本来是满人的 某人中途退出
+				fmt.Println("置为0 退出")
+				room.StartGameChan <- 0
+				fmt.Println("<-0 ok")
+			}else if len(room.RoomUserId) == 1{//最后一人退出
+
+			}
+		}()
+		delete(room.RoomUserId,u.RoomPosition)
+		u.RoomId = ""
+		u.RoomPosition = 0
+		fmt.Println("发送了消息")
+
+	}
+}
+
+//整理牌 全部的牌 返回给前端
+func (u *UserLine)rspAllCards()  {
+	//sort.Ints(u.PengCardings)
+	//sort.Ints(u.GangCardings)
+	u.WriteMsg(&msg.Cards{u.Cardings,u.PengCardings,u.GangCardings})
 }
 
 //func InitUserLine(a gate.Agent)(u *UserLine)  {
@@ -245,24 +339,27 @@ func (u *UserLine)penDealCards(value int)  {
 	u.PenCards[value] = 1
 }
 
-//玩家 信号切换 准备
+//玩家 信号切换 准备 //准备开始游戏
+//准备后 只会加快游戏开始 不会取消游戏不开始
 func (u *UserLine)readGame()  {
+	fmt.Println("ready")
 	u.ReadySign = u.ReadySign ^ 1
+	room := rooms[u.RoomId]
 	if u.ReadySign == 1{
-		room := rooms[u.RoomId]
 		room.GameStartVote ++
 		if room.GameStartVote == room.RoomData.RoomVolume{
 			room.StartGameChan <- 1
 		}
 	}else{
-		rooms[u.RoomId].GameStartVote --
+		room.GameStartVote --
+
 	}
 }
 
 //创建房间
 //房间 创建成功 后 就一直在等待 开始
 func (u *UserLine) CreateRoom() bool {
-	if u.RoomId == 0 {
+	if u.RoomId == "" {
 		room := Room{}
 		AddCreateRoom(&room)
 		room.Go(func() {
@@ -282,18 +379,18 @@ func (u *UserLine) CreateRoom() bool {
 //value 为摸起牌的值
 func (u *UserLine)playMyCards(value int)  {
 
-	var room Room
-	//var i int
-	select {
-	case i := <- u.RoomSignal:
-	//	玩家操作
-		room = *rooms[i]
-
-	case <-time.After( 5 * time.Second)://玩家超时 还没打 将自动打出 摸起的牌
-		u.outOneRealCard(value)
-		//room := rooms[u.RoomId]
-	}
-	room.RoomTurn <- (room.RoomUserId[u.userData.Id] + 1) % 4 //下一家 摸牌等 权限
+	//var room Room
+	////var i int
+	//select {
+	//case i := <- u.RoomSignal:
+	////	玩家操作
+	////	room = *rooms[i]
+	//
+	//case <-time.After( 5 * time.Second)://玩家超时 还没打 将自动打出 摸起的牌
+	//	u.outOneRealCard(value)
+	//	//room := rooms[u.RoomId]
+	//}
+	//room.RoomTurn <- (room.RoomUserId[u.userData.Id] + 1) % 4 //下一家 摸牌等 权限
 }
 
 
@@ -328,7 +425,7 @@ func (u *UserLine)userPlayCard()  {
 				//	玩家出牌
 					var value int //接收 玩家要出的牌 从前端
 					if u.outOneRealCard(value){
-						room.OutCartds = value
+						room.OutCards = value
 						//rooms[u.RoomId].PlayerSignal <- (room.PlayerTurn + 1) % 4
 					}
 				}
