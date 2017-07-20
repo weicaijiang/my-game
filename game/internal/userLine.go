@@ -7,7 +7,7 @@ import (
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/go"
 	"gopkg.in/mgo.v2/bson"
-	"leaf/log"
+	"github.com/name5566/leaf/log"
 	"my-game/msg"
 	"github.com/name5566/leaf/timer"
 	"github.com/name5566/leaf/util"

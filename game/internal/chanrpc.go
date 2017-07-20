@@ -4,7 +4,7 @@ import (
 	"github.com/name5566/leaf/gate"
 	"my-game/msg"
 	"fmt"
-	"leaf/log"
+	"github.com/name5566/leaf/log"
 )
 
 type AgentInfo struct {

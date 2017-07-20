@@ -3,7 +3,7 @@ package internal
 import (
 	"reflect"
 	"my-game/msg"
-	"leaf/gate"
+	"github.com/name5566/leaf/gate"
 	"my-game/game"
 	"fmt"
 )

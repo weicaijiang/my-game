@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"daozhou-mahjong-server/conf"
+	"my-game/conf"
 	"github.com/name5566/leaf/db/mongodb"
 	"github.com/name5566/leaf/log"
 )
