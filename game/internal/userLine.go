@@ -217,15 +217,15 @@ func (u *UserLine)quitRoom()  {
 		fmt.Println("退出第一步")
 		room := rooms[u.RoomId]
 		room.RoomState = 0
-		go func() {
-			if len(room.RoomUserId) == room.RoomData.RoomVolume{//说明本来是满人的 某人中途退出
-				fmt.Println("置为0 退出")
-				room.StartGameChan <- 0
-				fmt.Println("<-0 ok")
-			}else if len(room.RoomUserId) == 1{//最后一人退出
-
-			}
-		}()
+		//go func() {
+		//	if len(room.RoomUserId) == room.RoomData.RoomVolume{//说明本来是满人的 某人中途退出
+		//		fmt.Println("置为0 退出")
+		//		room.StartGameChan <- 0
+		//		fmt.Println("<-0 ok")
+		//	}else if len(room.RoomUserId) == 1{//最后一人退出
+		//
+		//	}
+		//}()
 		delete(room.RoomUserId,u.RoomPosition)
 		u.RoomId = ""
 		u.RoomPosition = 0

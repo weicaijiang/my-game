@@ -99,7 +99,7 @@ func (r *Room)autoStartGame()  {
 				//房间 满人后将10s后开始游戏
 				select {
 				case flag :=<- r.StartGameChan://玩家都点了准备 马上开始
-					if flag == 1{
+					if flag == 1 && len(r.RoomUserId) == r.RoomData.RoomVolume{
 						r.RoomState = 1
 						fmt.Println("信号 游戏开始")
 						//r.startGame()
@@ -109,9 +109,13 @@ func (r *Room)autoStartGame()  {
 
 					}
 				case <- time.After(time.Second * 10)://10s准备 自动开始
-					r.RoomState = 1
+					if len(r.RoomUserId) == r.RoomData.RoomVolume{
+						r.RoomState = 1
+						fmt.Println("超时 游戏开始")
+					}else{
+						fmt.Println("什么都没做！")
+					}
 					//r.startGame()
-					fmt.Println("超时 游戏开始")
 				}
 			}
 		}, func() {
