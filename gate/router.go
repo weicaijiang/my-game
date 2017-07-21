@@ -18,5 +18,10 @@ func init() {
 	msg.Processor.SetRouter(&msg.ReadyGame{},game.ChanRPC)
 	msg.Processor.SetRouter(&msg.QuitRoom{},game.ChanRPC)
 
+	msg.Processor.SetRouter(&msg.Card{},game.ChanRPC)
+
+	msg.Processor.SetRouter(&msg.Peng{},game.ChanRPC)
+	msg.Processor.SetRouter(&msg.Gang{},game.ChanRPC)
+
 	//msg.Processor.SetRouter(&msg.LoginUser{},)
 }

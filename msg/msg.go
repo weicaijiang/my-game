@@ -25,6 +25,10 @@ func init() {
 
 //	牌
 	Processor.Register(&Cards{})
+	Processor.Register(&Card{})
+
+	Processor.Register(&Peng{})
+	Processor.Register(&Gang{})
 }
 
 const  (
@@ -116,3 +120,17 @@ type ReadyGame struct {
 	Flag int
 }
 
+type Card struct {
+	Index int //要出的牌的index
+	Value int //牌的值
+}
+
+type Peng struct {
+	Index int //要 碰的牌的下标
+	Value int
+}
+
+type Gang struct {
+	Index int //要 杠的牌的下标
+	Value int
+}

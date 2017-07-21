@@ -26,7 +26,8 @@ type UserLine struct {
 	RoomPosition int //座位号
 
 
-	MyTurn	chan int //轮到我 的信号
+	MyTurn	chan int //轮到我出牌的信号 即值为 我出的牌的值
+	SumChan chan string //总共信息号  用来确定玩家 操作了 碰(peng) 杠(gang) 吃(chi) 点炮(fire)等 超时未 none
 	RoomSignal chan int //房间释放信号 该玩家操作
 
 	CardMap	map[int]int //用来存放手牌的 用map 利于删除(打出) key 为牌的值 value为 张数
@@ -167,11 +168,12 @@ func (u *UserLine)createRoom(m interface{})  {
 	}
 	newRoom.RoomVolume = m.(*msg.RoomBase).Volume
 	room := new(Room)
-	room.initRoom()
 	room.RoomData = newRoom
 	room.RoomOwner = u.userData.Id
 	room.RoomUserId[1] = u.userData.AccID
-	u.RoomPosition = 1
+	room.LinearContext = skeleton.NewLinearContext()
+	room.initRoom()
+	u.RoomPosition = 0
 	AddCreateRoom(room)
 	u.RoomId = room.RoomData.RoomAccID
 	u.WriteMsg(&msg.RoomDataInfo{RoomID:newRoom.RoomID,RoomAccID:newRoom.RoomAccID,
@@ -191,7 +193,7 @@ func (u *UserLine)joinRoom(room *Room)  {
 			return
 		}else {
 			u.RoomId = room.RoomData.RoomAccID
-			for i := 1; i <= room.RoomData.RoomVolume; i++{
+			for i := 0; i < room.RoomData.RoomVolume; i++{
 				if _,ok := room.RoomUserId[i];!ok{
 					room.RoomUserId[i] = u.userData.AccID
 					u.RoomPosition = i
@@ -217,6 +219,7 @@ func (u *UserLine)quitRoom()  {
 		fmt.Println("退出第一步")
 		room := rooms[u.RoomId]
 		room.RoomState = 0
+		room.StartGameChan <- 0
 		//go func() {
 		//	if len(room.RoomUserId) == room.RoomData.RoomVolume{//说明本来是满人的 某人中途退出
 		//		fmt.Println("置为0 退出")
@@ -238,6 +241,7 @@ func (u *UserLine)quitRoom()  {
 func (u *UserLine)rspAllCards()  {
 	//sort.Ints(u.PengCardings)
 	//sort.Ints(u.GangCardings)
+	sort.Ints(u.Cardings)
 	u.WriteMsg(&msg.Cards{u.Cardings,u.PengCardings,u.GangCardings})
 }
 
@@ -349,6 +353,7 @@ func (u *UserLine)readGame()  {
 		room.GameStartVote ++
 		if room.GameStartVote == room.RoomData.RoomVolume{
 			room.StartGameChan <- 1
+			fmt.Println("都发送了 准备")
 		}
 	}else{
 		room.GameStartVote --
@@ -376,21 +381,17 @@ func (u *UserLine) CreateRoom() bool {
 }
 
 //出牌
-//value 为摸起牌的值
-func (u *UserLine)playMyCards(value int)  {
+//value 为摸起牌的值 index 为下标
+func (u *UserLine)playMyCards(index,value int)  {
+	if len(u.Cardings) >= index{
+		if u.Cardings[index] == value{//存在 这张牌
+			u.Cardings = append(u.Cardings[:index],u.Cardings[index+1:]...)
+			u.rspAllCards()
+		//	告知打出了牌
+			u.MyTurn <- value
+		}
+	}
 
-	//var room Room
-	////var i int
-	//select {
-	//case i := <- u.RoomSignal:
-	////	玩家操作
-	////	room = *rooms[i]
-	//
-	//case <-time.After( 5 * time.Second)://玩家超时 还没打 将自动打出 摸起的牌
-	//	u.outOneRealCard(value)
-	//	//room := rooms[u.RoomId]
-	//}
-	//room.RoomTurn <- (room.RoomUserId[u.userData.Id] + 1) % 4 //下一家 摸牌等 权限
 }
 
 
@@ -425,7 +426,7 @@ func (u *UserLine)userPlayCard()  {
 				//	玩家出牌
 					var value int //接收 玩家要出的牌 从前端
 					if u.outOneRealCard(value){
-						room.OutCards = value
+						room.OutCard = value
 						//rooms[u.RoomId].PlayerSignal <- (room.PlayerTurn + 1) % 4
 					}
 				}
@@ -438,4 +439,36 @@ func (u *UserLine)userPlayCard()  {
 		}
 
 	}
+}
+
+//碰操作
+func (u *UserLine)isPeng(value int)  bool{
+	for i := 0; i< len(u.Cardings)-1; i++{
+		if u.Cardings[i] == value && u.Cardings[i] == u.Cardings[i+1]{
+		//	可以碰
+			u.WriteMsg(&msg.Peng{i,value})
+			return true
+		}
+	}
+	return false
+}
+
+//杠操作
+func (u *UserLine)isGang(value int) bool  {
+	for i := 0; i <len(u.Cardings)-2; i++{
+		if u.Cardings[i] == value && u.Cardings[i+1] == u.Cardings[i] && u.Cardings[i+2] == u.Cardings[i]{
+			u.WriteMsg(&msg.Gang{i,value})
+			return true
+		}
+	}
+	return false
+}
+
+//吃牌
+func (u *UserLine)isChi(value int) bool {
+	return false
+}
+//胡牌
+func (u *UserLine)isChiHu(value int) bool {
+	return false
 }
