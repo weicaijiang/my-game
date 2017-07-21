@@ -293,14 +293,20 @@ func (r *Room)playCard()  {
 					break
 				}
 			}else if len(r.userWant["gang"]) == 1{
+			//
 
 			}else if len(r.userWant["peng"]) == 1{
+			//	碰优先于吃
 
 			}else if len(r.userWant["chi"]) >0 {
 				if len(r.userWant["chi"]) == 1{//一家吃
 
 				}else{//多家吃
-
+					for i:=1; i <= 3; i++{
+						if id, ok :=(r.userWant["chi"])[startPosition+i]; ok{//是下家吃?
+							fmt.Println("玩家iD",id,"吃")
+						}
+					}
 				}
 			}else{
 
