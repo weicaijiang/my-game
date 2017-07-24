@@ -14,6 +14,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"fmt"
 	"my-game/mjlib"
+	"math"
 )
 
 type UserLine struct {
@@ -517,9 +518,92 @@ func (u *UserLine)gangOK(gangType,index int,pengIndex int)  {
 	}
 }
 
+//获取手牌的 某张牌的具体的数量
+func (u *UserLine)getMapCards() (mapCards map[int]int) {
+	for i:=0; i< len(u.Cardings); i++{
+		if v,ok := mapCards[u.Cardings[i]]; ok{
+			mapCards[u.Cardings[i]] = v +1
+		}else {
+			mapCards[u.Cardings[i]] = 1
+		}
+	}
+	return
+
+}
+
 //吃牌
+//转化为map 记录个数
 func (u *UserLine)isChi(value int) bool {
 	if len(u.Cardings) >= 4{ //吃必须手牌4张以上
+		mapCards := u.getMapCards()
+		//for i := 0; i< len(u.Cardings); i++{
+		//	a := u.Cardings[i]
+		//	if a >= value{
+		//		if a - value == 2{
+		//			if mapCards[value+1] >0 {
+		//				mapCards[value+1] -=1
+		//				mapCards[value+2] -=1
+		//			}
+		//		}else if a - value == 1{
+		//			if mapCards[value+2] >0{
+		//				mapCards[value+1] -= 1
+		//				mapCards[value+2] -= 1
+		//			}
+		//		}else{}
+		//	}else {
+		//		if value - a == 2{
+		//			if mapCards[value-1]>0{
+		//				mapCards[value-1] -= 1
+		//				mapCards[value-2] -= 1
+		//			}
+		//		}else if value - a == 1{
+		//			if mapCards[value -2 ]>0{
+		//				mapCards[value-1] -= 1
+		//				mapCards[value-2] -= 1
+		//			}else if mapCards[value +1]>0{
+		//				mapCards[value-1] -= 1
+		//				mapCards[value+1] -= 1
+		//			}
+		//		}
+		//
+		//	}
+		//	if mapCards[value +1] >0 &&mapCards[value+2] >0 {
+		//		mapCards[value+1] -= 1
+		//		mapCards[value+2] -= 1
+		//	}
+		//}
+		for i, _:= range mapCards{
+			if math.Abs(float64(i - value)) ==2{
+				if v1,ok1 := mapCards[value + 1] ;ok1&&(v1<10||mapCards[i]<10){
+				//有一个 3 5  ==>有4
+					mapCards[value +1] += 10
+					mapCards[i] += 10
+				}
+				if v2,ok2 := mapCards[value-1]; ok2&&(v2<10||mapCards[i]<10){
+					mapCards[value -1] +=10
+					mapCards[i] +=10
+				}
+			}else if math.Abs(float64(i- value)) == 1{
+				// 3 4 value =3 i=4
+ 				if v1,ok1 := mapCards[value+2]; ok1&&(v1<10||mapCards[i]<10){
+					mapCards[value +2 ] += 10
+					mapCards[i] += 10
+				}
+				if v2, ok2 := mapCards[value-1]; ok2&&(v2<10||mapCards[i]<10){
+					mapCards[value-1] += 10
+					mapCards[i] += 10
+				}
+				// 2 3 value=3 i=2
+				if v3, ok3 := mapCards[value + 1]; ok3 &&(v3 <10 || mapCards[i]<10){
+					mapCards[value+1] += 10
+					mapCards[i] += 10
+				}
+				if v4, ok4 := mapCards[value -2]; ok4&&(v4<10&&mapCards[i]<10){
+					mapCards[value-2] += 10
+					mapCards[i] += 10
+				}
+			}
+		}
 
 	}
 	return false

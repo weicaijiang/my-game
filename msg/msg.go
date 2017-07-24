@@ -151,4 +151,5 @@ type MimeHu struct {
 type ChiPai struct {
 	Index int
 	Value int
+	Array [][2]int
 }
