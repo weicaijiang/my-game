@@ -20,6 +20,9 @@ func init() {
 //	出牌
 	handleRoom(&msg.Card{},handleInRoomMyTime)
 
+//	杠操作
+	handleRoom(&msg.Gang{},handleGang)
+
 }
 
 func handler(m interface{}, h interface{}) {
@@ -151,6 +154,27 @@ func handleOneCardByIndex(args []interface{})  {
 	m := args[0].(*msg.Card)
 	user := args[1].(*UserLine)
 	user.playMyCards(m.Index,m.Value)
-
 }
 
+//杠处理 即点击确定杠 摸牌的人
+func handleGang(args []interface{})  {
+
+	m := args[0].(*msg.Gang)
+	user := args[1].(*UserLine)
+	user.gangOK(m.GangType,m.Index,m.Value)
+}
+
+//碰处理 点击确定碰
+func handlePeng(args []interface{})  {
+	m := args[0].(*msg.Peng)
+	user := args[1].(*UserLine)
+	user.SumChan <- "peng"
+}
+
+//处理吃
+func handleChi(args []interface{})  {
+	m := args[0].(msg.ChiPai)
+	user := args[1].(*UserLine)
+
+
+}

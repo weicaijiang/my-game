@@ -22,6 +22,8 @@ func init() {
 
 	msg.Processor.SetRouter(&msg.Peng{},game.ChanRPC)
 	msg.Processor.SetRouter(&msg.Gang{},game.ChanRPC)
+	msg.Processor.SetRouter(&msg.ChiPai{},game.ChanRPC)
+
 
 	//msg.Processor.SetRouter(&msg.LoginUser{},)
 }

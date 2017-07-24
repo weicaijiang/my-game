@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/name5566/leaf/timer"
 	"sync"
+	"my-game/mjlib"
+	"my-game/msg"
 )
 
 type Room struct {
@@ -20,6 +22,8 @@ type Room struct {
 	CardsBase []int //记录下这副牌
 	DealCards []int //记录已发的牌
 	OutCard int //记录出的牌
+	WValueCard int //记录王牌的值
+	WIndexCard int //记录王牌的 index
 
 	pengFlag bool//碰的标记 一副牌中 一次只能一次碰
 	gangFlag bool //杠的标记 一副牌中 一次只能一次杠
@@ -137,6 +141,14 @@ func (r *Room)autoStartGame()  {
 	})
 }
 
+//获取王牌的index
+func (r *Room)getWIndex()  {
+	i := r.WValueCard / 100
+	w := (i - 1) * 9 + (r.WValueCard % 100) -1
+	r.WIndexCard = w
+
+}
+
 func (r *Room)startGame()  {
 	//val := <- r.StartGameChan
 	//if val == 1{
@@ -193,23 +205,26 @@ func (r *Room)playCard()  {
 		player := players[startPosition]
 		player.Cardings = append(player.Cardings,pCard)
 		player.rspAllCards()
-		select {//自己牌的检测 是否可以胡 或者杠
-			case r.OutCard = <- player.MyTurn:
-			//告知 其他玩家 是某张牌 让其他玩家 做出反应
-			//for j:=0; j< length; j++{
-			//	if j == startPosition {//刚出了牌的玩家
-			//	}else{//其他玩家看牌
-			//	//	是否能碰 能杠 能吃 能点炮....
-			//		if !r.pengFlag{//有一个玩家符合即可 其他玩家都不用再操作了
-			//			r.pengFlag = players[j].isPeng(r.OutCard)
-			//		}
-			//		if !r.gangFlag{//有一个玩家符合即可 其他玩家都不用再操作了
-			//			r.gangFlag = players[j].isGang(r.OutCard)
-			//		}
-			//		players[j].isChi(r.OutCard)
-			//	}
-			//}
+		go func(p UserLine,room *Room) {
+			if mjlib.IsHu(p.Cardings,r.WIndexCard,r.WValueCard){
+				p.WriteMsg(&msg.MimeHu{1,r.OutCard})
+			}
+			if p.anGang()|| p.mingGang(r.OutCard){
 
+			}
+		}(player,r)
+		select {//自己牌的检测 是否可以胡 或者杠
+			case flag  := <- player.MyTurn:
+				if flag == 100 {//自个胡牌
+					player.WriteMsg(&msg.MimeHu{1,r.OutCard})
+					break
+				}else if flag == 111{//自个杠 为暗杠
+					continue
+				}else if flag == 112{//明杠
+					continue
+				}else {//没有胡与杠 出牌 放杠不在这里处理
+					r.OutCard = flag
+				}
 			case <- time.After( 10 * time.Second)://超时 玩家没有动静 则出刚摸到的手牌 即 pCards == r.OutCard
 
 		}
@@ -220,18 +235,19 @@ func (r *Room)playCard()  {
 		wg := new(sync.WaitGroup)
 		for j:=0; j< length; j++{
 			if j == startPosition {//刚出了牌的玩家
+
 			}else{//其他玩家看牌
 				//	是否能碰 能杠 能吃 能点炮....
 				wg.Add(1)
 				go func(player UserLine,r *Room) {
+					player.isChiHu(r.OutCard,r.WIndexCard,r.WValueCard)//吃胡 判断
 					if !r.pengFlag{//有一个玩家符合即可 其他玩家都不用再操作了
 						r.pengFlag = player.isPeng(r.OutCard)
 					}
 					if !r.gangFlag{//有一个玩家符合即可 其他玩家都不用再操作了
-						r.gangFlag = player.isGang(r.OutCard)
+						r.gangFlag = player.fangGang(r.OutCard)
 					}
 					player.isChi(r.OutCard)
-					player.isChiHu(r.OutCard)
 					wg.Done()
 				}(players[j],r)
 			}
@@ -275,7 +291,9 @@ func (r *Room)playCard()  {
 		wgPlayer.Wait()
 		//处理 玩家给回的信息 需求的操作
 		if len(r.userWant) == 0{
-		//	所有玩家 没有需求
+			//所有玩家 没有需求
+			//顺序 进行游戏
+			startPosition = (startPosition + 1) % r.RoomData.RoomVolume
 		} else {
 			if len(r.userWant["fire"]) >0{
 				if len(r.userWant["fire"]) == 1{//只有一个玩家吃胡
@@ -290,10 +308,12 @@ func (r *Room)playCard()  {
 						//	初始化 游戏结束
 						}
 					}
-					break
 				}
+				break
 			}else if len(r.userWant["gang"]) == 1{
-			//
+			//有一家杠 放杠处理
+				player.gangOK(113,0,0)
+				continue
 
 			}else if len(r.userWant["peng"]) == 1{
 			//	碰优先于吃

@@ -13,6 +13,7 @@ import (
 	"github.com/name5566/leaf/util"
 	"gopkg.in/mgo.v2"
 	"fmt"
+	"my-game/mjlib"
 )
 
 type UserLine struct {
@@ -453,22 +454,84 @@ func (u *UserLine)isPeng(value int)  bool{
 	return false
 }
 
-//杠操作
-func (u *UserLine)isGang(value int) bool  {
+//确定碰操作
+func (u *UserLine)pengOK(value int)  {
+	for i :=0; i < len(u.Cardings); i++{
+
+	}
+}
+
+//杠操作 杠别人 不是自己摸的 放杠
+func (u *UserLine)fangGang(value int) bool  {
 	for i := 0; i <len(u.Cardings)-2; i++{
 		if u.Cardings[i] == value && u.Cardings[i+1] == u.Cardings[i] && u.Cardings[i+2] == u.Cardings[i]{
-			u.WriteMsg(&msg.Gang{i,value})
+			u.WriteMsg(&msg.Gang{i,value,113})
 			return true
 		}
 	}
 	return false
 }
 
+//暗杠 自己摸的 判断
+func (u *UserLine)anGang()bool  {
+	for i := 0; i < len(u.Cardings) - 3; i++{
+		if u.Cardings[i] == u.Cardings[i+1] && u.Cardings[i] == u.Cardings[i+2] && u.Cardings[i] == u.Cardings[i+3]{
+			u.WriteMsg(&msg.Gang{i,u.Cardings[i],111})
+			return true
+		}
+	}
+	return false
+}
+
+//明杠 判断
+//value 位摸上的牌
+func (u *UserLine)mingGang(value int) bool {
+	for i:=0; i<len(u.PengCardings); i++{
+		if u.PengCardings[i] == value{
+			u.WriteMsg(&msg.Gang{i,value,112})
+			return true
+		}
+	}
+	return false
+}
+
+//玩家确定杠 处理
+func (u *UserLine)gangOK(gangType,index int,pengIndex int)  {
+	if gangType == 111 && pengIndex == 0{//暗杠
+		u.GangCardings = append(u.GangCardings,u.Cardings[index])
+		u.Cardings = append(u.Cardings[:index],u.Cardings[index+4:]...)
+	}else if gangType == 112 && pengIndex !=0 && pengIndex < len(u.PengCardings){//明杠
+		if u.PengCardings[pengIndex] == u.Cardings[index]{
+			u.GangCardings = append(u.GangCardings,u.Cardings[index])
+			u.PengCardings = append(u.PengCardings[:pengIndex],u.PengCardings[pengIndex+1:]...)
+			u.Cardings = append(u.Cardings[:index],u.Cardings[index+1:]...)
+		}else {
+			u.WriteMsg(&msg.CodeState{msg.ERROR_Params,"参数有误!"})
+		}
+
+	}else if gangType == 113 && pengIndex ==0 {//放杠
+		u.GangCardings = append(u.GangCardings,u.Cardings[index])
+		u.Cardings = append(u.Cardings[:index],u.Cardings[index+3:]...)
+	}else {
+
+	}
+}
+
 //吃牌
 func (u *UserLine)isChi(value int) bool {
+	if len(u.Cardings) >= 4{ //吃必须手牌4张以上
+
+	}
 	return false
 }
 //胡牌
-func (u *UserLine)isChiHu(value int) bool {
+// 参数 value为牌的值 wIndex 王牌的下标 wValue 王牌的值
+func (u *UserLine)isChiHu(value int,wIndex,wValue int) bool {
+	a := u.Cardings
+	a = append(a,value)
+	if mjlib.IsHu(a,wIndex,wValue){
+		u.WriteMsg(&msg.MimeHu{0,wValue})
+		return true
+	}
 	return false
 }
