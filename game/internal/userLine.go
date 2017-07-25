@@ -172,9 +172,9 @@ func (u *UserLine)createRoom(m interface{})  {
 	room := new(Room)
 	room.RoomData = newRoom
 	room.RoomOwner = u.userData.Id
-	room.RoomUserId[1] = u.userData.AccID
 	room.LinearContext = skeleton.NewLinearContext()
 	room.initRoom()
+	room.RoomUserId[0] = u.userData.AccID
 	u.RoomPosition = 0
 	AddCreateRoom(room)
 	u.RoomId = room.RoomData.RoomAccID
@@ -456,10 +456,12 @@ func (u *UserLine)isPeng(value int)  bool{
 }
 
 //确定碰操作
-func (u *UserLine)pengOK(value int)  {
-	for i :=0; i < len(u.Cardings); i++{
+func (u *UserLine)pengOK(index int)  {
+	u.PengCardings = append(u.PengCardings,u.Cardings[index])
+	u.Cardings = append(u.Cardings[:index],u.Cardings[index+2:]...)
 
-	}
+	//u.rspAllCards()
+
 }
 
 //杠操作 杠别人 不是自己摸的 放杠
@@ -501,11 +503,13 @@ func (u *UserLine)gangOK(gangType,index int,pengIndex int)  {
 	if gangType == 111 && pengIndex == 0{//暗杠
 		u.GangCardings = append(u.GangCardings,u.Cardings[index])
 		u.Cardings = append(u.Cardings[:index],u.Cardings[index+4:]...)
+		u.MyTurn <- 111
 	}else if gangType == 112 && pengIndex !=0 && pengIndex < len(u.PengCardings){//明杠
 		if u.PengCardings[pengIndex] == u.Cardings[index]{
 			u.GangCardings = append(u.GangCardings,u.Cardings[index])
 			u.PengCardings = append(u.PengCardings[:pengIndex],u.PengCardings[pengIndex+1:]...)
 			u.Cardings = append(u.Cardings[:index],u.Cardings[index+1:]...)
+			u.MyTurn <- 112
 		}else {
 			u.WriteMsg(&msg.CodeState{msg.ERROR_Params,"参数有误!"})
 		}
@@ -513,6 +517,7 @@ func (u *UserLine)gangOK(gangType,index int,pengIndex int)  {
 	}else if gangType == 113 && pengIndex ==0 {//放杠
 		u.GangCardings = append(u.GangCardings,u.Cardings[index])
 		u.Cardings = append(u.Cardings[:index],u.Cardings[index+3:]...)
+		u.MyTurn <- 113
 	}else {
 
 	}
@@ -520,6 +525,7 @@ func (u *UserLine)gangOK(gangType,index int,pengIndex int)  {
 
 //获取手牌的 某张牌的具体的数量
 func (u *UserLine)getMapCards() (mapCards map[int]int) {
+	mapCards = make(map[int]int)
 	for i:=0; i< len(u.Cardings); i++{
 		if v,ok := mapCards[u.Cardings[i]]; ok{
 			mapCards[u.Cardings[i]] = v +1
@@ -536,42 +542,6 @@ func (u *UserLine)getMapCards() (mapCards map[int]int) {
 func (u *UserLine)isChi(value int) bool {
 	if len(u.Cardings) >= 4{ //吃必须手牌4张以上
 		mapCards := u.getMapCards()
-		//for i := 0; i< len(u.Cardings); i++{
-		//	a := u.Cardings[i]
-		//	if a >= value{
-		//		if a - value == 2{
-		//			if mapCards[value+1] >0 {
-		//				mapCards[value+1] -=1
-		//				mapCards[value+2] -=1
-		//			}
-		//		}else if a - value == 1{
-		//			if mapCards[value+2] >0{
-		//				mapCards[value+1] -= 1
-		//				mapCards[value+2] -= 1
-		//			}
-		//		}else{}
-		//	}else {
-		//		if value - a == 2{
-		//			if mapCards[value-1]>0{
-		//				mapCards[value-1] -= 1
-		//				mapCards[value-2] -= 1
-		//			}
-		//		}else if value - a == 1{
-		//			if mapCards[value -2 ]>0{
-		//				mapCards[value-1] -= 1
-		//				mapCards[value-2] -= 1
-		//			}else if mapCards[value +1]>0{
-		//				mapCards[value-1] -= 1
-		//				mapCards[value+1] -= 1
-		//			}
-		//		}
-		//
-		//	}
-		//	if mapCards[value +1] >0 &&mapCards[value+2] >0 {
-		//		mapCards[value+1] -= 1
-		//		mapCards[value+2] -= 1
-		//	}
-		//}
 		for i, _:= range mapCards{
 			if math.Abs(float64(i - value)) ==2{
 				if v1,ok1 := mapCards[value + 1] ;ok1&&(v1<10||mapCards[i]<10){
@@ -580,24 +550,27 @@ func (u *UserLine)isChi(value int) bool {
 					mapCards[i] += 10
 				}
 				if v2,ok2 := mapCards[value-1]; ok2&&(v2<10||mapCards[i]<10){
+					//1 3
 					mapCards[value -1] +=10
 					mapCards[i] +=10
 				}
 			}else if math.Abs(float64(i- value)) == 1{
-				// 3 4 value =3 i=4
+				// 3 4 value =3 i=4  3 4 5
  				if v1,ok1 := mapCards[value+2]; ok1&&(v1<10||mapCards[i]<10){
 					mapCards[value +2 ] += 10
 					mapCards[i] += 10
 				}
+				// 2 3 4
 				if v2, ok2 := mapCards[value-1]; ok2&&(v2<10||mapCards[i]<10){
 					mapCards[value-1] += 10
 					mapCards[i] += 10
 				}
-				// 2 3 value=3 i=2
+				// 2 3 value=3 i=2    2 3 4
 				if v3, ok3 := mapCards[value + 1]; ok3 &&(v3 <10 || mapCards[i]<10){
 					mapCards[value+1] += 10
 					mapCards[i] += 10
 				}
+				// 1 2 3
 				if v4, ok4 := mapCards[value -2]; ok4&&(v4<10&&mapCards[i]<10){
 					mapCards[value-2] += 10
 					mapCards[i] += 10
@@ -611,7 +584,8 @@ func (u *UserLine)isChi(value int) bool {
 //胡牌
 // 参数 value为牌的值 wIndex 王牌的下标 wValue 王牌的值
 func (u *UserLine)isChiHu(value int,wIndex,wValue int) bool {
-	a := u.Cardings
+	a := make([]int,len(u.Cardings))
+	a = u.Cardings
 	a = append(a,value)
 	if mjlib.IsHu(a,wIndex,wValue){
 		u.WriteMsg(&msg.MimeHu{0,wValue})

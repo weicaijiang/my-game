@@ -4,6 +4,7 @@ package internal
 
 import (
 	"math/rand"
+	"my-game/mjlib"
 )
 
 var (
@@ -37,4 +38,10 @@ func ShuffleCards() []int {
 	}
 
 	return cardsBase
+}
+
+func init()  {
+	mjlib.Init()
+	mjlib.MTableMgr.LoadTable()
+	mjlib.MTableMgr.LoadFengTable()
 }

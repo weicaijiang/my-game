@@ -5,6 +5,7 @@ import (
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/log"
 	"my-game/msg"
+	"strconv"
 )
 
 func init() {
@@ -18,10 +19,20 @@ func init() {
 	handleRoom(&msg.QuitRoom{},handleQuitRoom)
 
 //	出牌
-	handleRoom(&msg.Card{},handleInRoomMyTime)
+//	handleRoom(&msg.Card{},handleInRoomMyTime)
+	handleInRoomMyTime(&msg.Card{},handleOneCardByIndex)
 
 //	杠操作
 	handleRoom(&msg.Gang{},handleGang)
+
+//	胡
+	handleInRoomMyTime(&msg.MimeHu{},handleMimeHu)
+
+//	碰
+	handleRoom(&msg.Peng{},handlePeng)
+
+//
+
 
 }
 
@@ -168,13 +179,38 @@ func handleGang(args []interface{})  {
 func handlePeng(args []interface{})  {
 	m := args[0].(*msg.Peng)
 	user := args[1].(*UserLine)
-	user.SumChan <- "peng"
+	user.SumChan <- "peng+" + strconv.Itoa(m.Index)+"+"+strconv.Itoa(m.Value)
+}
+
+//杠处理 点击确定杠 明杠处理
+func handleFangGang(args []interface{})  {
+	m := args[0].(*msg.Gang)
+	user := args[1].(*UserLine)
+	user.SumChan <- "gang+" + strconv.Itoa(m.Index) + "+" + strconv.Itoa(m.Value)
+
+}
+
+//点击碰牌后 需出一张牌
+func handlePengOut(args []interface{})  {
+	m := args[0].(*msg.Card)
+	user := args[1].(*UserLine)
+	user.MyTurn <- m.Value
+	user.Cardings = append(user.Cardings[:m.Index],user.Cardings[m.Index+1:]...)
+	user.rspAllCards()
+
 }
 
 //处理吃
 func handleChi(args []interface{})  {
-	m := args[0].(msg.ChiPai)
+	//m := args[0].(msg.ChiPai)
+	//user := args[1].(*UserLine)
+
+
+}
+
+//胡 自摸
+func handleMimeHu(args []interface{})  {
+	//m := args[0].(*msg.MimeHu)
 	user := args[1].(*UserLine)
-
-
+	user.MyTurn <- 100
 }

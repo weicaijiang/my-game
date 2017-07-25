@@ -153,3 +153,17 @@ type ChiPai struct {
 	Value int
 	Array [][2]int
 }
+
+//确定碰
+type PengOK struct {
+	Index int
+	Value int
+}
+
+//确定杠
+//放杠
+type GangOthers struct {
+	Index int
+	Value int
+	GangType int
+}
