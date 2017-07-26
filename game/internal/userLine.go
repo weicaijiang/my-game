@@ -101,6 +101,8 @@ func (u *UserLine)login(name string)  {
 		}
 		userData.LastLoginTime = int(time.Now().Unix())
 		u.userData = userData
+		u.MyTurn = make(chan int,1)
+		u.SumChan = make(chan string,1)
 		//u.Cardings = make([]int,0,200)
 		userLines[u.userData.Id]= u
 		u.UserData().(*AgentInfo).userID = userData.Id
@@ -390,6 +392,7 @@ func (u *UserLine)playMyCards(index,value int)  {
 	if len(u.Cardings) >= index{
 		if u.Cardings[index] == value{//存在 这张牌
 			u.Cardings = append(u.Cardings[:index],u.Cardings[index+1:]...)
+			fmt.Println("打出后的手牌:",u.Cardings)
 			u.rspAllCards()
 		//	告知打出了牌
 			u.MyTurn <- value

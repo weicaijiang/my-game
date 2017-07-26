@@ -66,6 +66,7 @@ func (r *Room)initRoom()  {
 	r.gangFlag = false
 	r.StartGameChan = make(chan int,1)
 	r.RoomUserId = make(map[int]string)
+	r.userWant = make(map[string]map[int]string)
 	//r.LinearContext = skeleton.NewLinearContext()
 
 }
@@ -236,18 +237,18 @@ func (r *Room)playCard()  {
 		fmt.Println("玩家id:",player.userData.AccID,"的手牌为:",player.Cardings)
 
 		r.Playing = player.userData.AccID
-		player.rspAllCards()
 
-
-		go func(p *UserLine,room *Room) {
-			if mjlib.IsHu(p.Cardings,r.WIndexCard,r.WValueCard){
-				p.WriteMsg(&msg.MimeHu{1,r.OutCard})
+		//go func(p *UserLine,room *Room) {
+			if mjlib.IsHu(player.Cardings,r.WIndexCard,r.WValueCard){
+				player.WriteMsg(&msg.MimeHu{1,r.OutCard})
 			}
 			//fmt.Println("1玩家iD:",p.userData.AccID,"进入检验胡牌后的牌:",p.Cardings)
-			if p.anGang()|| p.mingGang(r.OutCard){
+			if player.anGang()|| player.mingGang(r.OutCard){
 
 			}
-		}(player,r)
+		//}(player,r)
+		player.rspAllCards()
+		fmt.Println("玩家",player.userData.AccID,"出牌")
 		select {//自己牌的检测 是否可以胡 或者杠
 			case flag  := <- player.MyTurn:
 				if flag == 100 {//自个胡牌

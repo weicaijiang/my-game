@@ -6,6 +6,7 @@ import (
 	"github.com/name5566/leaf/log"
 	"my-game/msg"
 	"strconv"
+	"fmt"
 )
 
 func init() {
@@ -165,6 +166,7 @@ func handleReadyGame(args []interface{})  {
 //手牌处理 即摸到的牌 要打出的牌
 func handleOneCardByIndex(args []interface{})  {
 	m := args[0].(*msg.Card)
+	fmt.Println("打出的手牌有:",m.Index,m.Value)
 	user := args[1].(*UserLine)
 	user.playMyCards(m.Index,m.Value)
 }
