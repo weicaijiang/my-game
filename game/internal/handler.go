@@ -24,6 +24,7 @@ func init() {
 
 //	杠操作
 	handleRoom(&msg.Gang{},handleGang)
+	handleRoom(&msg.FangGang{},handleFangGang)
 
 //	胡
 	handleInRoomMyTime(&msg.MimeHu{},handleMimeHu)
@@ -148,7 +149,8 @@ func handleQuitRoom(args []interface{})  {
 
 	user := args[1].(*UserLine)
 	user.quitRoom()
-	user.WriteMsg(&msg.CodeState{msg.SUCCESS_DONE,"退出成功!"})
+	user.WriteMsg(&msg.QuitRoom{2})
+	//user.WriteMsg(&msg.CodeState{msg.SUCCESS_DONE,"退出成功!"})
 }
 
 //准备 按钮
@@ -167,13 +169,14 @@ func handleOneCardByIndex(args []interface{})  {
 	user.playMyCards(m.Index,m.Value)
 }
 
-//杠处理 即点击确定杠 摸牌的人
+//杠处理 即点击确定杠 摸牌的人 明 暗杠
 func handleGang(args []interface{})  {
 
 	m := args[0].(*msg.Gang)
 	user := args[1].(*UserLine)
 	user.gangOK(m.GangType,m.Index,m.Value)
 }
+
 
 //碰处理 点击确定碰
 func handlePeng(args []interface{})  {
@@ -184,7 +187,7 @@ func handlePeng(args []interface{})  {
 
 //杠处理 点击确定杠 明杠处理
 func handleFangGang(args []interface{})  {
-	m := args[0].(*msg.Gang)
+	m := args[0].(*msg.FangGang)
 	user := args[1].(*UserLine)
 	user.SumChan <- "gang+" + strconv.Itoa(m.Index) + "+" + strconv.Itoa(m.Value)
 
@@ -210,7 +213,7 @@ func handleChi(args []interface{})  {
 
 //胡 自摸
 func handleMimeHu(args []interface{})  {
-	//m := args[0].(*msg.MimeHu)
+	m := args[0].(*msg.MimeHu)
 	user := args[1].(*UserLine)
-	user.MyTurn <- 100
+	user.MyTurn <- m.HuType
 }

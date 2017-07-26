@@ -165,6 +165,7 @@ func (r *Room)startGame()  {
 		for _,v := range r.RoomUserId{
 			user := accIDUsers[v]
 			user.Cardings = r.CardsBase[(0 + i * 13) : (13 + i * 13)]
+			user.Cardings = append([]int{},r.CardsBase[(0 + i * 13) : (13 + i * 13)]...)
 			sort.Ints(user.Cardings)
 			fmt.Println("玩家id:",v,"长度有:",len(user.Cardings),"开始手牌有:",user.Cardings)
 
@@ -187,13 +188,24 @@ func (r *Room)startGame()  {
 		r.playCard()
 	}, func() {//游戏结束 一局
 		//初始化 一些资源
-		r.CardsBase = *new([]int)
-		r.DealCards = *new([]int)
-		r.RoomState = 0
+		//r.CardsBase = *new([]int)
+		//r.DealCards = *new([]int)
+		//r.RoomState = 0
 	})
 	//
 	//}
 }
+
+//广播
+func (r *Room)boarding(messge string)  {
+	length := len(r.RoomUserId)
+	for i :=0; i< length; i++{
+		player := accIDUsers[r.RoomUserId[i]]
+		player.WriteMsg(&msg.Boarding{Message:messge})
+	}
+
+}
+
 //开始打牌
 func (r *Room)playCard()  {
 	//cp := make(chan int,1)
@@ -207,108 +219,91 @@ func (r *Room)playCard()  {
 	//var mutex sync.Mutex
 	for i:=0; i< length; i++{
 		players[i] = accIDUsers[r.RoomUserId[i]]
-		fmt.Println("players[i]",players[i].Cardings)
-		fmt.Println("lenp------",len(players[i].Cardings))
-		fmt.Println("lenp------",cap(players[i].Cardings))
 	}
-	fmt.Println("players=len=",len(players))
+	//fmt.Println("players=len=",len(players))
 	startPosition := userLines[r.RoomOwner].RoomPosition
 	fmt.Println("起始位置开始:",startPosition)
 	for i := 4 * 13; i<136 ; i++{
 		r.OutCard = r.CardsBase[i]
 		fmt.Println("摸到的牌是pCards:",r.OutCard)
-		fmt.Println("摸到的牌的前一张:",r.CardsBase[i-1])
-		//r.DealCards = append(r.DealCards,pCard)
-		//var turn int
-		//player := players[startPosition]
-		player := new(UserLine)
-		player = players[startPosition]
+		//fmt.Println("摸到的牌的前一张:",r.CardsBase[i-1])
+		player := players[startPosition]
+		//player := new(UserLine)
+		//player = players[startPosition]
 		//mutex.Lock()
-		players[startPosition].Cardings = append(players[startPosition].Cardings,r.OutCard)
+		player.Cardings = append(player.Cardings,r.OutCard)
 		//mutex.Unlock()
 		fmt.Println("玩家id:",player.userData.AccID,"的手牌为:",player.Cardings)
-		for j:=0; j<length; j++{
-			fmt.Println("第ddttttddvvdjj",j,"次")
-			fmt.Println("第ddttttvvdddjj",players[j].userData.AccID)
-			fmt.Println("第ddtttvvvdddjj",players[j].Cardings,"次")
-			fmt.Println("lenp--dddd----",len(players[j].Cardings))
-			fmt.Println("lenp--dddd----",cap(players[j].Cardings))
-		}
+
 		r.Playing = player.userData.AccID
 		player.rspAllCards()
-		//for j:=0; j<length; j++{
-		//	fmt.Println("第ddddvvdddd",j,"次")
-		//	fmt.Println("第ddvvddd",players[j].userData.AccID)
-		//	fmt.Println("第ddvvvddd",players[j].Cardings,"次")
-		//}
 
-		//go func(p *UserLine,room *Room) {
-			if mjlib.IsHu(player.Cardings,r.WIndexCard,r.WValueCard){
-				player.WriteMsg(&msg.MimeHu{1,r.OutCard})
+
+		go func(p *UserLine,room *Room) {
+			if mjlib.IsHu(p.Cardings,r.WIndexCard,r.WValueCard){
+				p.WriteMsg(&msg.MimeHu{1,r.OutCard})
 			}
-		for j:=0; j<length; j++{
-			fmt.Println("第ddtttddd",j,"次")
-			fmt.Println("第ddttddd",players[j].userData.AccID)
-			fmt.Println("第ddttddd",players[j].Cardings,"次")
-		}
-			fmt.Println("1玩家iD:",player.userData.AccID,"进入检验胡牌后的牌:",player.Cardings)
-			if player.anGang()|| player.mingGang(r.OutCard){
+			//fmt.Println("1玩家iD:",p.userData.AccID,"进入检验胡牌后的牌:",p.Cardings)
+			if p.anGang()|| p.mingGang(r.OutCard){
 
 			}
-		for j:=0; j<length; j++{
-			fmt.Println("第ddd",j,"次")
-			fmt.Println("第ddd",players[j].userData.AccID)
-			fmt.Println("第ddd",players[j].Cardings,"次")
-		}
-			fmt.Println("2玩家iD:",player.userData.AccID,"进入检验胡牌后的牌:",player.Cardings)
-		//}(player,r)
+		}(player,r)
 		select {//自己牌的检测 是否可以胡 或者杠
 			case flag  := <- player.MyTurn:
 				if flag == 100 {//自个胡牌
-					player.WriteMsg(&msg.MimeHu{1,r.OutCard})
+					//player.WriteMsg(&msg.MimeHu{1,r.OutCard})
+					str := "玩家"+ player.userData.AccID +"自摸"
+					r.boarding(str)
 					break
 				}else if flag == 111{//自个杠 为暗杠
-
+					str := "玩家"+ player.userData.AccID +"暗杠"
+					r.boarding(str)
 					continue
 				}else if flag == 112{//明杠
+					str := "玩家"+ player.userData.AccID +"明杠"
+					r.boarding(str)
 					continue
 				}else {//没有胡与杠 出牌 放杠不在这里处理
 					r.OutCard = flag
+					str := "玩家"+ player.userData.AccID +"出牌:"+strconv.Itoa(r.OutCard)
+					r.boarding(str)
 				}
-			case <- time.After( 15 * time.Second)://超时 玩家没有动静 则出最后一张牌
+			case <- time.After( 30 * time.Second)://超时 玩家没有动静 则出最后一张牌
 				r.OutCard = player.Cardings[len(player.Cardings)-1]
 				player.Cardings = player.Cardings[:(len(player.Cardings)-1)]
 				fmt.Println("玩家ID为:",player.userData.AccID,"超时打出的牌为:",r.OutCard,"此时的手牌有:",player.Cardings)
+				str := "玩家ID为:"+ player.userData.AccID + "超时打出的牌为:" + strconv.Itoa(r.OutCard)
 				player.rspAllCards()
+				r.boarding(str)
 		}
 
 
 		//其他玩家 检测自己的手牌  /// r.OutCard 为玩家出的牌
 		// 返回 信息给玩家
-		//Again: wg := new(sync.WaitGroup)
-		//for j:=0; j< length; j++{
-		//	if j == startPosition {//刚出了牌的玩家
-		//
-		//	}else{//其他玩家看牌
-		//		//	是否能碰 能杠 能吃 能点炮....
-		//		wg.Add(1)
-		//		go func(player UserLine,r *Room) {
-		//			fmt.Println("kaishi:",player.Cardings)
-		//			player.isChiHu(r.OutCard,r.WIndexCard,r.WValueCard)//吃胡 判断
-		//			//吃胡后的牌
-		//			fmt.Println("吃胡后 判断:",player.Cardings)
-		//			if !r.pengFlag{//有一个玩家符合即可 其他玩家都不用再操作了
-		//				r.pengFlag = player.isPeng(r.OutCard)
-		//			}
-		//			if !r.gangFlag{//有一个玩家符合即可 其他玩家都不用再操作了
-		//				r.gangFlag = player.fangGang(r.OutCard)
-		//			}
-		//			//player.isChi(r.OutCard)
-		//			wg.Done()
-		//		}(*players[j],r)
-		//	}
-		//}
-		//wg.Wait()
+		Again: wg := new(sync.WaitGroup)
+		for j:=0; j< length; j++{
+			if j == startPosition {//刚出了牌的玩家
+
+			}else{//其他玩家看牌
+				//	是否能碰 能杠 能吃 能点炮....
+				wg.Add(1)
+				go func(player UserLine,r *Room) {
+					//fmt.Println("kaishi:",player.Cardings)
+					player.isChiHu(r.OutCard,r.WIndexCard,r.WValueCard)//吃胡 判断
+					//吃胡后的牌
+					fmt.Println("吃胡后 判断:",player.Cardings)
+					if !r.pengFlag{//有一个玩家符合即可 其他玩家都不用再操作了
+						r.pengFlag = player.isPeng(r.OutCard)
+					}
+					if !r.gangFlag{//有一个玩家符合即可 其他玩家都不用再操作了
+						r.gangFlag = player.fangGang(r.OutCard)
+					}
+					//player.isChi(r.OutCard)
+					wg.Done()
+				}(*players[j],r)
+			}
+		}
+		wg.Wait()
 
 
 
@@ -322,12 +317,9 @@ func (r *Room)playCard()  {
 			if j == startPosition{
 
 			}else {
-				fmt.Println("第",j,"次")
-				fmt.Println("第",players[j].userData.AccID)
-				fmt.Println("第",players[j].Cardings,"次")
 				wgPlayer.Add(1)
 				go func(player UserLine, r *Room) {
-					fmt.Println("玩家id",player.userData.AccID)
+					//fmt.Println("玩家id",player.userData.AccID)
 					select {
 					case flag := <- player.SumChan:
 						strFlagArray := strings.Split(flag,"+")
@@ -353,7 +345,7 @@ func (r *Room)playCard()  {
 					case <- time.After(15 * time.Second)://5s 反应
 						fmt.Println("玩家ID：",player.userData.AccID," 超时反应","手牌为:",player.Cardings)
 					}
-					fmt.Println("完成一次:")
+					//fmt.Println("完成一次:")
 					wgPlayer.Done()
 				}(*players[j],r)
 			}
@@ -371,11 +363,22 @@ func (r *Room)playCard()  {
 				if len(r.userWant["fire"]) == 1{//只有一个玩家吃胡
 				//	初始化
 				//	r.Playing
+					var str string
+					for i := 1; i <= 3; i++{
+						if v, ok :=(r.userWant["fire"])[i]; ok{
+							str = v
+							break
+						}
+					}
+					s := "玩家"+ str +"吃胡"
+					r.boarding(s)
 					r.initRoom()
 				}else{//多个玩家吃胡
 					for i:=1 ; i <= 3; i++{//
 						if id, ok :=(r.userWant["fire"])[(startPosition+i)%4]; ok{//是下家胡?
 							fmt.Println("玩家iD",id,"吃胡了")
+							str := "玩家iD"+id+"吃胡了"
+							r.boarding(str)
 							r.initRoom()
 							break
 						//	初始化 游戏结束
@@ -395,6 +398,8 @@ func (r *Room)playCard()  {
 
 					}
 					user.gangOK(113,index,0)
+					str := "玩家:"+user.userData.AccID+"杠!"
+					r.boarding(str)
 					user.rspAllCards()
 				}
 				startPosition = user.RoomPosition
@@ -414,11 +419,15 @@ func (r *Room)playCard()  {
 
 					}
 					user.pengOK(index)
+					str := "玩家:"+user.userData.AccID+"碰!"
+					r.boarding(str)
 					user.rspAllCards()
 				}
 				select {
 				case r.OutCard = <- user.MyTurn:
 				//	玩家有操作
+				//	碰完后出牌
+
 				case <- time.After(5 * time.Second):
 					//碰了 但是超时还没出牌
 				//	将出手牌的最后一张 按一排顺序的
@@ -426,10 +435,11 @@ func (r *Room)playCard()  {
 					r.OutCard = user.Cardings[length-1]
 					user.Cardings = user.Cardings[:length-1]
 					//u.Cardings = append(u.Cardings[:index],u.Cardings[index+2:]...)
-
 				}
+				str := "玩家"+user.userData.AccID+"出牌:"+strconv.Itoa(r.OutCard)
+				r.boarding(str)
 				startPosition = user.RoomPosition
-				//goto Again
+				goto Again
 
 			}else if len(r.userWant["chi"]) >0 {
 				if len(r.userWant["chi"]) == 1{//一家吃

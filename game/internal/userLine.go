@@ -101,7 +101,7 @@ func (u *UserLine)login(name string)  {
 		}
 		userData.LastLoginTime = int(time.Now().Unix())
 		u.userData = userData
-		u.Cardings = make([]int,0,200)
+		//u.Cardings = make([]int,0,200)
 		userLines[u.userData.Id]= u
 		u.UserData().(*AgentInfo).userID = userData.Id
 		fmt.Println("userline=%v",u)
@@ -201,6 +201,7 @@ func (u *UserLine)joinRoom(room *Room)  {
 					room.RoomUserId[i] = u.userData.AccID
 					u.RoomPosition = i
 					fmt.Println("玩家ID=",u.userData.AccID+" 加入房间ID=",u.RoomId+" 座位号为:",i)
+					u.WriteMsg(&msg.JoinRoom{u.RoomId})
 					break
 				}
 			}

@@ -14,12 +14,26 @@
         <!--<br>-->
         <button v-on:click="ok">注册</button>
         <br><button @click="createRoom">创建房间</button>
-        <br>创建的房间号:{{room}}
+        <br>创建的房间号:{{roomID}} <div style="text-align: center">{{boardingMsg}}</div>
         <br><input v-model="roomID" placeholder="room id">
         <button @click="joinRoom">加入房间</button>
 
         <br><button @click="readyGame">准备</button>
         <br><button @click="quitRoom">退出房间</button>
+        <br>
+        <span v-show="pengDisabled">
+            <button @click="peng">碰</button>
+        </span>
+        <span v-show="gangDisabled">
+            <button @click="gang" >杠</button>
+        </span>
+            <span v-show="huDisabled">
+                <button @click="hu" >胡</button>
+            </span>
+        <br><button @click="pass">过</button>
+        <br>手牌:<span v-for="(card,index) in cards"><button @click="outCard(index,card)">{{card}}</button></span>
+        <br>碰牌:<span v-for="peng in pengCands">{{peng}}</span>
+        <br>杠牌:<span v-for="gang in pengCands">{{gang}}</span>
 
     </div>
 </div>
@@ -34,6 +48,16 @@
 //            ws:
             room:{},//房间信息
             roomID:'',
+            pengV:{},
+            gangV:{},
+            huV:{},
+            huDisabled: false,
+            pengDisabled: false,
+            gangDisabled: false,
+            cards: [],
+            pengCands: [],
+            gangCands: [],
+            boardingMsg: '',
 
         },
         methods: {
@@ -58,11 +82,65 @@
             },
             readyGame:function () {
                 ws.send(JSON.stringify({ReadyGame:{Flag:1}}))
+            },
+            pengFlag:function (index,value) {
+              this.pengDisabled = true
+                this.peng(index,value)
+            },
+            peng:function (index,value) {
+                ws.send(JSON.stringify({Peng:{Index:index,Value:value}}))
+                this.pengDisabled = false
+            },
+            gangFlag:function (index,cardValue,type) {
+                this.gangDisabled = true
+                this.gang(index,cardValue,type)
+            },
+            gang:function (index,cardValue,type) {
+                if (type === 113){
+                    ws.send(JSON.stringify({FangGang:{Index:index,Value:cardValue,GangType:type}}))
+                }else {
+                    ws.send(JSON.stringify({Gang:{Index:index,Value:cardValue,GangType:type}}))
+                }
+                this.gangDisabled= false
+
+            },
+            huFlag:function (type,cardValue) {
+              this.huDisabled = true
+                this.hu(type,cardValue)
+            },
+            hu:function (type,cardValue) {
+                ws.send(JSON.stringify({MimeHu:{HuType:type,CardValue:cardValue}}))
+                this.huDisabled = false
+            },
+            pass:function () {
+                
+            },
+            getCards:function (cards, pengCards,gangCards) {
+                this.cards = cards
+                this.pengCands = pengCards
+                this.gangCands = gangCards
+            },
+//            c出牌
+            outCard:function (index,card) {
+                console.log("shoupai",index,card)
+                ws.send(JSON.stringify({Card:{Index:index,Value:card}}))
+            },
+//            广播
+            boarding:function (str) {
+                this.boardingMsg = str
+            },
+            joinRoomID:function (str) {//房间号
+                this.roomID = str
             }
 
         },
+        watch:{
+
+        }
     })
 
+    var testing = ''
+    var startCount = 0
     var decoder = new TextDecoder('utf-8')
     var ws = new WebSocket('ws://127.0.0.1:3653')
     ws.binaryType = 'arraybuffer'
@@ -79,6 +157,7 @@
 
 //        alert("数据已接收...");
         console.log("received =",data)
+        testing = data
 //        console.log("received =",typeof (data))
 //        var
 
@@ -94,15 +173,25 @@
             console.log("手牌有:",data.Cards.Cards)
             console.log("碰有:",data.Cards.PengCards)
             console.log("杠有:",data.Cards.GangCards)
+            app.getCards(data.Cards.Cards,data.Cards.PengCards,data.Cards.GangCards)
 
         }else if(data.JoinRoom){
-
+            app.joinRoomID(data.JoinRoom.RoomAccID)
         }else if(data.QuitRoom){
-
+            app.joinRoomID("没加入任何房间")
         }else if(data.ReadyGame){
             console.log("readyGame",data.ReadyGame.Flag)
-        }else{
-            console.log("else...")
+        } else if (data.MimeHu) {
+            console.log("hu",data.MimeHu)
+            app.huFlag(data.MimeHu.HuType,data.MimeHu.CardValue)
+        }else if (data.Gang){
+            console.log("gang",data.Gang)
+            app.gangFlag(data.Gang.Index,data.Gang.Value,data.GangType)
+
+        }else if (data.Peng){
+            app.pengFlag(data.Peng.Index,data.Peng.Value)
+        }else if (data.Boarding){
+            app.boarding(data.Boarding.Message)
         }
 //        switch (data){
 //        case

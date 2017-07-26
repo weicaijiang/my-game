@@ -29,12 +29,16 @@ func init() {
 
 	Processor.Register(&Peng{})
 	Processor.Register(&Gang{})
+	Processor.Register(&FangGang{})
 
 //	胡
 	Processor.Register(&MimeHu{})
 
 //	吃
 	Processor.Register(&ChiPai{})
+
+//	广播
+	Processor.Register(&Boarding{})
 }
 
 const  (
@@ -136,10 +140,17 @@ type Peng struct {
 	Value int
 }
 
+//明 暗杠的
 type Gang struct {
 	Index int //要 杠的牌的下标
 	Value int // value为 说明是自个摸起的杠 111为暗杠 112为明杠 113为放杠
 	GangType int //杠的类型 是否是自己摸起来杠的，是为1则为暗杠，2为明杠， 否则为3为别人放杠
+}
+//放杠的
+type FangGang struct {
+	Index int
+	Value int
+	GangType int
 }
 //胡牌
 type MimeHu struct {
@@ -166,4 +177,11 @@ type GangOthers struct {
 	Index int
 	Value int
 	GangType int
+}
+
+//广播
+type Boarding struct {
+	Name string //玩家名字
+	Value int //牌的值
+	Message string //广播信息
 }
