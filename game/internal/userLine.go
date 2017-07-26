@@ -101,6 +101,7 @@ func (u *UserLine)login(name string)  {
 		}
 		userData.LastLoginTime = int(time.Now().Unix())
 		u.userData = userData
+		u.Cardings = make([]int,0,200)
 		userLines[u.userData.Id]= u
 		u.UserData().(*AgentInfo).userID = userData.Id
 		fmt.Println("userline=%v",u)

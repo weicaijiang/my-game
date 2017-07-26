@@ -200,35 +200,40 @@ func (r *Room)playCard()  {
 	//chance := <- cp
 	//获取庄家的 座位号 即目前 谁是庄家
 	//根据座位号进行 轮环
-	var players map[int]*UserLine
-	players =make(map[int]*UserLine)
+	//var players map[int]*UserLine
+	players := make(map[int]*UserLine)
+	//players := new(map[int]*UserLine)
 	length := len(r.RoomUserId)
+	//var mutex sync.Mutex
 	for i:=0; i< length; i++{
 		players[i] = accIDUsers[r.RoomUserId[i]]
 		fmt.Println("players[i]",players[i].Cardings)
+		fmt.Println("lenp------",len(players[i].Cardings))
+		fmt.Println("lenp------",cap(players[i].Cardings))
 	}
 	fmt.Println("players=len=",len(players))
 	startPosition := userLines[r.RoomOwner].RoomPosition
 	fmt.Println("起始位置开始:",startPosition)
 	for i := 4 * 13; i<136 ; i++{
-		for j:=0; j<length; j++{
-			fmt.Println("第ddddvvdddd",j,"次")
-			fmt.Println("第ddvvddd",players[j].userData.AccID)
-			fmt.Println("第ddvvvddd",players[j].Cardings,"次")
-		}
 		r.OutCard = r.CardsBase[i]
 		fmt.Println("摸到的牌是pCards:",r.OutCard)
 		fmt.Println("摸到的牌的前一张:",r.CardsBase[i-1])
 		//r.DealCards = append(r.DealCards,pCard)
 		//var turn int
-		player := players[startPosition]
-		for j:=0; j<length; j++{
-			fmt.Println("第ddttttddvvdddd",j,"次")
-			fmt.Println("第ddttttvvddd",players[j].userData.AccID)
-			fmt.Println("第ddtttvvvddd",players[j].Cardings,"次")
-		}
-		player.Cardings = append(player.Cardings,r.OutCard)
+		//player := players[startPosition]
+		player := new(UserLine)
+		player = players[startPosition]
+		//mutex.Lock()
+		players[startPosition].Cardings = append(players[startPosition].Cardings,r.OutCard)
+		//mutex.Unlock()
 		fmt.Println("玩家id:",player.userData.AccID,"的手牌为:",player.Cardings)
+		for j:=0; j<length; j++{
+			fmt.Println("第ddttttddvvdjj",j,"次")
+			fmt.Println("第ddttttvvdddjj",players[j].userData.AccID)
+			fmt.Println("第ddtttvvvdddjj",players[j].Cardings,"次")
+			fmt.Println("lenp--dddd----",len(players[j].Cardings))
+			fmt.Println("lenp--dddd----",cap(players[j].Cardings))
+		}
 		r.Playing = player.userData.AccID
 		player.rspAllCards()
 		//for j:=0; j<length; j++{
