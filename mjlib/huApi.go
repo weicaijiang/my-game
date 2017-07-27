@@ -1,11 +1,19 @@
 package mjlib
 
+import "fmt"
+
 //自己写的 调用mjlib的胡牌
 
 //传入 手牌数组 鬼牌位置
 //返回 是否胡
 func IsHu(a []int,guiIndex,guiValue int)bool  {
-	var as = InitCards
+	 as := []int{
+		0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0,
+	}
+	fmt.Println("初始as:",as)
 	if len(a) == 2{//手牌只有2张
 		if a[0] == guiValue || a[1] == guiValue{
 			return true
@@ -27,6 +35,7 @@ func IsHu(a []int,guiIndex,guiValue int)bool  {
 			as[(v%400 + 26)] += 1
 		}
 	}
+	fmt.Println("整理后的as",as)
 	if MHuLib.GetHuInfo(as,34,guiIndex,34){
 		return true
 	}

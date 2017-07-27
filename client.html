@@ -22,18 +22,21 @@
         <br><button @click="quitRoom">退出房间</button>
         <br>
         <span v-show="pengDisabled">
-            <button @click="peng">碰</button>
+            <button @click="pengEvent">碰</button>
         </span>
         <span v-show="gangDisabled">
-            <button @click="gang" >杠</button>
+            <button @click="gangEvent" >杠</button>
         </span>
-            <span v-show="huDisabled">
-                <button @click="hu" >胡</button>
+        <span v-show="huDisabled">
+            <button @click="hu" >胡</button>
+        </span>
+        <span v-show="fireDisabled">
+                <button @click="fire" >点炮</button>
             </span>
         <br><button @click="pass">过</button>
         <br>手牌:<span v-for="(card,index) in cards"><button @click="outCard(index,card)">{{card}}</button></span>
         <br>碰牌:<span v-for="peng in pengCands">{{peng}}</span>
-        <br>杠牌:<span v-for="gang in pengCands">{{gang}}</span>
+        <br>杠牌:<span v-for="gang in gangCands">{{gang}}</span>
 
     </div>
 </div>
@@ -54,10 +57,28 @@
             huDisabled: false,
             pengDisabled: false,
             gangDisabled: false,
+            fireDisabled: false,
             cards: [],
             pengCands: [],
             gangCands: [],
             boardingMsg: '',
+            pengInfo:{
+               Index:0,
+                Value: 0,
+            },
+            gangInfo:{
+               Index: 0,
+                Value: 0,
+                GangType: 0,
+            },
+            huInfo:{
+               HuType: 0,
+                Value: 0,
+            },
+            fireHu:{
+               HuType: 0,
+                Value : 0,
+            }
 
         },
         methods: {
@@ -85,31 +106,39 @@
             },
             pengFlag:function (index,value) {
               this.pengDisabled = true
-                this.peng(index,value)
+                this.pengInfo.Index = index
+                this.pengInfo.Value = value
             },
-            peng:function (index,value) {
-                ws.send(JSON.stringify({Peng:{Index:index,Value:value}}))
+            pengEvent:function () {
+                ws.send(JSON.stringify({Peng:{Index:this.pengInfo.Index,Value:this.pengInfo.Value}}))
                 this.pengDisabled = false
             },
-            gangFlag:function (index,cardValue,type) {
+            gangFlag:function (index,cardValue,gangType) {
                 this.gangDisabled = true
-                this.gang(index,cardValue,type)
+//                this.gang(index,cardValue,type)
+                this.gangInfo.Index = index
+                this.gangInfo.Value = cardValue
+                this.gangInfo.GangType = gangType
+
             },
-            gang:function (index,cardValue,type) {
-                if (type === 113){
-                    ws.send(JSON.stringify({FangGang:{Index:index,Value:cardValue,GangType:type}}))
+            gangEvent:function () {
+                console.log("叫杠!!!!",this.gangInfo)
+                if (this.gangInfo.GangType === 113){
+                    ws.send(JSON.stringify({FangGang:{Index:this.gangInfo.Index,Value:this.gangInfo.Value,GangType:this.gangInfo.GangType}}))
                 }else {
-                    ws.send(JSON.stringify({Gang:{Index:index,Value:cardValue,GangType:type}}))
+                    ws.send(JSON.stringify({Gang:{Index:this.gangInfo.Index,Value:this.gangInfo.Value,GangType:this.gangInfo.GangType}}))
                 }
                 this.gangDisabled= false
 
             },
             huFlag:function (type,cardValue) {
               this.huDisabled = true
-                this.hu(type,cardValue)
+//                this.hu(type,cardValue)
+                this.huInfo.HuType = type
+                this.huInfo.Value = cardValue
             },
-            hu:function (type,cardValue) {
-                ws.send(JSON.stringify({MimeHu:{HuType:type,CardValue:cardValue}}))
+            hu:function () {
+                ws.send(JSON.stringify({MimeHu:{HuType:this.huInfo.HuType,CardValue:this.huInfo.Value}}))
                 this.huDisabled = false
             },
             pass:function () {
@@ -128,9 +157,21 @@
 //            广播
             boarding:function (str) {
                 this.boardingMsg = str
+                this.pengDisabled = false
+                this.gangDisabled = false
+                this.huDisabled = false
             },
             joinRoomID:function (str) {//房间号
                 this.roomID = str
+            },
+            fireFlag:function (HuType,Value) {
+                this.fireDisabled = true
+                this.fireHu.HuType = HuType
+                this.fireHu.Value = Value
+            },
+            fire:function () {
+                ws.send(JSON.stringify({FireHu:{HuType:this.fireHu.HuType,CardValue:this.fireHu.Value}}))
+                this.fireDisabled = true
             }
 
         },
@@ -186,12 +227,16 @@
             app.huFlag(data.MimeHu.HuType,data.MimeHu.CardValue)
         }else if (data.Gang){
             console.log("gang",data.Gang)
-            app.gangFlag(data.Gang.Index,data.Gang.Value,data.GangType)
+            app.gangFlag(data.Gang.Index,data.Gang.Value,data.Gang.GangType)
 
         }else if (data.Peng){
             app.pengFlag(data.Peng.Index,data.Peng.Value)
         }else if (data.Boarding){
+
             app.boarding(data.Boarding.Message)
+        }else if (data.FireHu){
+            console.log("firehu",data.FireHu)
+            app.fireFlag(data.FireHu.HuType,data.FireHu.CardValue)
         }
 //        switch (data){
 //        case

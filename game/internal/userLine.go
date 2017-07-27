@@ -106,7 +106,7 @@ func (u *UserLine)login(name string)  {
 		//u.Cardings = make([]int,0,200)
 		userLines[u.userData.Id]= u
 		u.UserData().(*AgentInfo).userID = userData.Id
-		fmt.Println("userline=%v",u)
+		//fmt.Println("userline=%v",u)
 		u.autoSaveDB()
 	})
 }
@@ -151,7 +151,7 @@ func (u *UserLine)autoSaveDB()  {
 				log.Error("save user %v data error",data)
 				//return
 			}
-			fmt.Println("insert db")
+			//fmt.Println("insert db")
 
 		}, func() {
 			u.autoSaveDB()
@@ -176,6 +176,7 @@ func (u *UserLine)createRoom(m interface{})  {
 	room.RoomData = newRoom
 	room.RoomOwner = u.userData.Id
 	room.LinearContext = skeleton.NewLinearContext()
+	room.RoomUserId = make(map[int]string)
 	room.initRoom()
 	room.RoomUserId[0] = u.userData.AccID
 	u.RoomPosition = 0
@@ -522,7 +523,7 @@ func (u *UserLine)gangOK(gangType,index int,pengIndex int)  {
 	}else if gangType == 113 && pengIndex ==0 {//放杠
 		u.GangCardings = append(u.GangCardings,u.Cardings[index])
 		u.Cardings = append(u.Cardings[:index],u.Cardings[index+3:]...)
-		u.MyTurn <- 113
+		//u.MyTurn <- 113
 	}else {
 
 	}
@@ -592,8 +593,9 @@ func (u *UserLine)isChiHu(value int,wIndex,wValue int) bool {
 	a := make([]int,len(u.Cardings))
 	a = u.Cardings
 	a = append(a,value)
+	fmt.Println("吃胡看手牌+出的牌")
 	if mjlib.IsHu(a,wIndex,wValue){
-		u.WriteMsg(&msg.MimeHu{0,wValue})
+		u.WriteMsg(&msg.FireHu{0,wValue})
 		return true
 	}
 	return false

@@ -33,6 +33,7 @@ func init() {
 
 //	胡
 	Processor.Register(&MimeHu{})
+	Processor.Register(&FireHu{})
 
 //	吃
 	Processor.Register(&ChiPai{})
@@ -184,4 +185,10 @@ type Boarding struct {
 	Name string //玩家名字
 	Value int //牌的值
 	Message string //广播信息
+}
+
+//点炮胡
+type FireHu struct {
+	HuType int
+	CardValue int
 }

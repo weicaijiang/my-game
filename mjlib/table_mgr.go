@@ -63,16 +63,16 @@ func (this *TableMgr) check(key int, gui_num int, eye bool, chi bool) bool {
 
 func (this *TableMgr) LoadTable() {
 	for i := 0; i < 9; i++ {
-		//name := fmt.Sprintf("D:/mygo/bin/tbl/table_%d.tbl", i)
-		name := fmt.Sprintf("/home/yin/goWorkSpace/bin/tbl/table_%d.tbl", i)
+		name := fmt.Sprintf("D:/mygo/bin/tbl/table_%d.tbl", i)
+		//name := fmt.Sprintf("/home/yin/goWorkSpace/bin/tbl/table_%d.tbl", i)
 		//name := fmt.Sprintf("bin/tbl/table_%d.tbl", i)
 		fmt.Println("loadTable=",name)
 		this.m_tbl[i].load(name)
 	}
 
 	for i := 0; i < 9; i++ {
-		//name := fmt.Sprintf("D:/mygo/bin/tbl/eye_table_%d.tbl", i)
-		name := fmt.Sprintf("/home/yin/goWorkSpace/bin/tbl/eye_table_%d.tbl", i)
+		name := fmt.Sprintf("D:/mygo/bin/tbl/eye_table_%d.tbl", i)
+		//name := fmt.Sprintf("/home/yin/goWorkSpace/bin/tbl/eye_table_%d.tbl", i)
 		//name := fmt.Sprintf("bin/tbl/eye_table_%d.tbl", i)
 		this.m_eye_tbl[i].load(name)
 	}
@@ -96,16 +96,16 @@ func (this *TableMgr) DumpTable() {
 func (this *TableMgr) LoadFengTable() {
 	for i := 0; i < 9; i++ {
 		//name := fmt.Sprintf("bin/tbl/feng_table_%d.tbl", i)
-		//name := fmt.Sprintf("D:/mygo/bin/tbl/feng_table_%d.tbl", i)
-		name := fmt.Sprintf("/home/yin/goWorkSpace/bin/tbl/feng_table_%d.tbl", i)
+		name := fmt.Sprintf("D:/mygo/bin/tbl/feng_table_%d.tbl", i)
+		//name := fmt.Sprintf("/home/yin/goWorkSpace/bin/tbl/feng_table_%d.tbl", i)
 		fmt.Println("nameLD",name)
 		this.m_feng_tbl[i].load(name)
 	}
 
 	for i := 0; i < 9; i++ {
 		//name := fmt.Sprintf("bin/tbl/feng_eye_table_%d.tbl", i)
-		//name := fmt.Sprintf("D:/mygo/bin/tbl/feng_eye_table_%d.tbl", i)
-		name := fmt.Sprintf("/home/yin/goWorkSpace/bin/tbl/feng_eye_table_%d.tbl", i)
+		name := fmt.Sprintf("D:/mygo/bin/tbl/feng_eye_table_%d.tbl", i)
+		//name := fmt.Sprintf("/home/yin/goWorkSpace/bin/tbl/feng_eye_table_%d.tbl", i)
 		fmt.Println("nameLd",name)
 		this.m_feng_eye_tbl[i].load(name)
 	}

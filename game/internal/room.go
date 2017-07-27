@@ -65,7 +65,7 @@ func (r *Room)initRoom()  {
 	r.pengFlag = false
 	r.gangFlag = false
 	r.StartGameChan = make(chan int,1)
-	r.RoomUserId = make(map[int]string)
+	//r.RoomUserId = make(map[int]string)
 	r.userWant = make(map[string]map[int]string)
 	//r.LinearContext = skeleton.NewLinearContext()
 
@@ -189,6 +189,8 @@ func (r *Room)startGame()  {
 		r.playCard()
 	}, func() {//游戏结束 一局
 		//初始化 一些资源
+		fmt.Println("新一局游戏")
+		//r.CardsBase =
 		//r.CardsBase = *new([]int)
 		//r.DealCards = *new([]int)
 		//r.RoomState = 0
@@ -221,13 +223,16 @@ func (r *Room)playCard()  {
 	for i:=0; i< length; i++{
 		players[i] = accIDUsers[r.RoomUserId[i]]
 	}
-	//fmt.Println("players=len=",len(players))
 	startPosition := userLines[r.RoomOwner].RoomPosition
 	fmt.Println("起始位置开始:",startPosition)
-	for i := 4 * 13; i<136 ; i++{
+	//王牌为最后一张牌 即倒是第一张
+	cardLength := len(r.CardsBase)
+	r.WValueCard = r.CardsBase[cardLength-1]
+	r.getWIndex()
+	fmt.Println("鬼牌:",r.WValueCard,r.WIndexCard)
+	for i := 4 * 13; i<cardLength -2 ; i++{
 		r.OutCard = r.CardsBase[i]
 		fmt.Println("摸到的牌是pCards:",r.OutCard)
-		//fmt.Println("摸到的牌的前一张:",r.CardsBase[i-1])
 		player := players[startPosition]
 		//player := new(UserLine)
 		//player = players[startPosition]
@@ -269,7 +274,7 @@ func (r *Room)playCard()  {
 					str := "玩家"+ player.userData.AccID +"出牌:"+strconv.Itoa(r.OutCard)
 					r.boarding(str)
 				}
-			case <- time.After( 30 * time.Second)://超时 玩家没有动静 则出最后一张牌
+			case <- time.After( 60 * time.Second)://超时 玩家没有动静 则出最后一张牌
 				r.OutCard = player.Cardings[len(player.Cardings)-1]
 				player.Cardings = player.Cardings[:(len(player.Cardings)-1)]
 				fmt.Println("玩家ID为:",player.userData.AccID,"超时打出的牌为:",r.OutCard,"此时的手牌有:",player.Cardings)
@@ -292,7 +297,7 @@ func (r *Room)playCard()  {
 					//fmt.Println("kaishi:",player.Cardings)
 					player.isChiHu(r.OutCard,r.WIndexCard,r.WValueCard)//吃胡 判断
 					//吃胡后的牌
-					fmt.Println("吃胡后 判断:",player.Cardings)
+					//fmt.Println("吃胡后 判断:",player.Cardings)
 					if !r.pengFlag{//有一个玩家符合即可 其他玩家都不用再操作了
 						r.pengFlag = player.isPeng(r.OutCard)
 					}
@@ -313,7 +318,9 @@ func (r *Room)playCard()  {
 		r.gangFlag = false
 
 		//玩家给回信息
+		fmt.Println("等待玩家是否碰杠操作")
 		wgPlayer := new(sync.WaitGroup)
+		r.userWant = make(map[string]map[int]string)
 		for j := 0; j< length; j++{
 			if j == startPosition{
 
@@ -324,26 +331,31 @@ func (r *Room)playCard()  {
 					select {
 					case flag := <- player.SumChan:
 						strFlagArray := strings.Split(flag,"+")
+						//fmt.Println("strFlagArray",strFlagArray)
 						switch strFlagArray[0] {
 						case "peng":
 							fmt.Println("玩家ID：",player.userData.AccID," 叫碰")
+							r.userWant["peng"] = make(map[int]string)
 							(r.userWant["peng"])[player.RoomPosition] = player.userData.AccID + "+" + strFlagArray[1]
 							r.pengUserID = player.userData.AccID
 						case "gang":
 							fmt.Println("玩家ID：",player.userData.AccID," 叫杠")
+							r.userWant["gang"] = make(map[int]string)
 							(r.userWant["gang"])[player.RoomPosition] = player.userData.AccID + "+" + strFlagArray[1]
 							r.gangUserID = player.userData.AccID
 						case "chi":
 							fmt.Println("玩家ID：",player.userData.AccID," 叫吃")
+							r.userWant["chi"] = make(map[int]string)
 							(r.userWant["chi"])[player.RoomPosition] = player.userData.AccID
 						case "fire":
 							fmt.Println("玩家ID：",player.userData.AccID," 叫胡")
+							r.userWant["fire"] = make(map[int]string)
 							(r.userWant["fire"])[player.RoomPosition] = player.userData.AccID
 						default:
 							fmt.Println("玩家ID：",player.userData.AccID," pass")
 						}
 						//wgPlayer.Done()
-					case <- time.After(15 * time.Second)://5s 反应
+					case <- time.After(5 * time.Second)://5s 反应
 						fmt.Println("玩家ID：",player.userData.AccID," 超时反应","手牌为:",player.Cardings)
 					}
 					//fmt.Println("完成一次:")
@@ -371,14 +383,14 @@ func (r *Room)playCard()  {
 							break
 						}
 					}
-					s := "玩家"+ str +"吃胡"
+					s := "玩家"+ str +"吃胡:"+strconv.Itoa(r.OutCard)
 					r.boarding(s)
 					r.initRoom()
 				}else{//多个玩家吃胡
 					for i:=1 ; i <= 3; i++{//
 						if id, ok :=(r.userWant["fire"])[(startPosition+i)%4]; ok{//是下家胡?
-							fmt.Println("玩家iD",id,"吃胡了")
-							str := "玩家iD"+id+"吃胡了"
+							//fmt.Println("玩家iD",id,"吃胡了")
+							str := "玩家iD"+id+"吃胡了"+strconv.Itoa(r.OutCard)
 							r.boarding(str)
 							r.initRoom()
 							break
@@ -389,8 +401,9 @@ func (r *Room)playCard()  {
 				break
 			}else if len(r.userWant["gang"]) == 1{
 			//有一家杠 放杠处理
-				user := accIDUsers[r.pengUserID]
+				user := accIDUsers[r.gangUserID]
 				r.Playing = user.userData.AccID
+				//fmt.Println("有一个玩家杠---------:",user.userData.AccID)
 				ugang := r.userWant["gang"]
 				if v, ok := ugang[user.RoomPosition]; ok{
 					as := strings.Split(v,"+")
@@ -424,12 +437,13 @@ func (r *Room)playCard()  {
 					r.boarding(str)
 					user.rspAllCards()
 				}
+				fmt.Println("等待玩家",user.userData.AccID,"出牌....")
 				select {
 				case r.OutCard = <- user.MyTurn:
 				//	玩家有操作
 				//	碰完后出牌
 
-				case <- time.After(5 * time.Second):
+				case <- time.After(15 * time.Second):
 					//碰了 但是超时还没出牌
 				//	将出手牌的最后一张 按一排顺序的
 					length := len(user.Cardings)

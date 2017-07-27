@@ -6,7 +6,6 @@ import (
 	"github.com/name5566/leaf/log"
 	"my-game/msg"
 	"strconv"
-	"fmt"
 )
 
 func init() {
@@ -28,7 +27,10 @@ func init() {
 	handleRoom(&msg.FangGang{},handleFangGang)
 
 //	胡
-	handleInRoomMyTime(&msg.MimeHu{},handleMimeHu)
+	handleRoom(&msg.MimeHu{},handleMimeHu)
+	handleRoom(&msg.FireHu{},handleFireHu)
+
+
 
 //	碰
 	handleRoom(&msg.Peng{},handlePeng)
@@ -69,9 +71,9 @@ func handleRoom(m interface{}, h interface{})  {
 			return
 		}
 		if _, ok := rooms[user.RoomId]; ok{//在房间里
+			//fmt.Println("房间判断在---------")
 			args[1] = user
 			h.(func([]interface{}))(args)
-
 		}else {//报错 该房间不存在
 			user.WriteMsg(&msg.CodeState{msg.ERRO_NOTEXISITED,"房间不存在"})
 			return 
@@ -166,7 +168,7 @@ func handleReadyGame(args []interface{})  {
 //手牌处理 即摸到的牌 要打出的牌
 func handleOneCardByIndex(args []interface{})  {
 	m := args[0].(*msg.Card)
-	fmt.Println("打出的手牌有:",m.Index,m.Value)
+	//fmt.Println("打出的手牌有:",m.Index,m.Value)
 	user := args[1].(*UserLine)
 	user.playMyCards(m.Index,m.Value)
 }
@@ -190,6 +192,7 @@ func handlePeng(args []interface{})  {
 //杠处理 点击确定杠 明杠处理
 func handleFangGang(args []interface{})  {
 	m := args[0].(*msg.FangGang)
+	//fmt.Println("放杠",m.Index,m.Value,m.GangType)
 	user := args[1].(*UserLine)
 	user.SumChan <- "gang+" + strconv.Itoa(m.Index) + "+" + strconv.Itoa(m.Value)
 
@@ -218,4 +221,11 @@ func handleMimeHu(args []interface{})  {
 	m := args[0].(*msg.MimeHu)
 	user := args[1].(*UserLine)
 	user.MyTurn <- m.HuType
+}
+
+//点炮
+func handleFireHu(args []interface{})  {
+	m := args[0].(*msg.FireHu)
+	user := args[1].(*UserLine)
+	user.SumChan <- "fire+" + strconv.Itoa(m.CardValue)
 }
